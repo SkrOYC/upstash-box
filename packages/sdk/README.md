@@ -104,9 +104,10 @@ const run = await box.agent.run({
 });
 const result = run.result; // typed as { name: string, score: number }
 
-for await (const part of box.agent.stream({
+const stream = await box.agent.stream({
   prompt: "Refactor the auth flow",
-})) {
+});
+for await (const part of stream) {
   if (part.type === "text-delta") process.stdout.write(part.text);
   if (part.type === "tool-call") console.log(part.toolName, part.input);
   if (part.type === "finish") console.log(part.usage.inputTokens + part.usage.outputTokens);
@@ -185,21 +186,25 @@ await box.deleteSnapshot(snapshot.id);
 
 ### Run object
 
-Every `agent.run()` and `exec()` call returns a `Run` object:
+Every `agent.run()` and `exec.command()` call returns a `Run` object. Streaming methods (`agent.stream()`, `exec.stream()`) return a `StreamRun` which extends `Run` and is async-iterable.
 
 ```ts
 const run = await box.agent.run({ prompt: "..." });
 
 run.id; // Run ID
 run.result; // Final output (typed if schema provided)
-await run.status(); // "running" | "completed" | "failed" | "cancelled"
+run.status; // "running" | "completed" | "failed" | "cancelled" | "detached"
 run.cost; // { inputTokens, outputTokens, computeMs, totalUsd }
 await run.cancel(); // Abort
 await run.logs(); // Filtered log entries
 
-for await (const chunk of run.stream()) {
-  process.stdout.write(chunk);
+// Streaming returns a StreamRun — async-iterable with typed Chunk objects
+const stream = await box.agent.stream({ prompt: "..." });
+for await (const chunk of stream) {
+  if (chunk.type === "text-delta") process.stdout.write(chunk.text);
 }
+stream.status; // "completed" after iteration finishes
+stream.result; // final output
 ```
 
 ## Models
