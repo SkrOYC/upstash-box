@@ -86,7 +86,6 @@ export enum OpenCodeModel {
   Zen_GPT_5_2_Codex = "opencode/gpt-5.2-codex",
   Zen_Gemini_3_1_Pro = "opencode/gemini-3.1-pro",
   Zen_Gemini_3_Flash = "opencode/gemini-3-flash",
-  Zen_DeepSeek_V3_2 = "opencode/deepseek-v3.2",
   Zen_Qwen3_Coder = "opencode/qwen3-coder",
 }
 
