@@ -81,7 +81,6 @@ export const MODEL_OPTIONS_BY_AGENT: Record<
         { value: OpenCodeModel.Zen_Gemini_3_1_Pro, label: "Gemini 3.1 Pro" },
         { value: OpenCodeModel.Zen_Gemini_3_Flash, label: "Gemini 3 Flash" },
         { value: OpenCodeModel.Zen_Qwen3_Coder, label: "Qwen3 Coder 480B" },
-        { value: OpenCodeModel.Zen_DeepSeek_V3_2, label: "DeepSeek V3.2" },
       ],
     },
     {
