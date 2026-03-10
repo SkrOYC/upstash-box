@@ -11,10 +11,10 @@ npm install @upstash/box
 ## Quick start
 
 ```ts
-import { Box, Runtime, ClaudeCode } from "@upstash/box";
+import { Box, ClaudeCode } from "@upstash/box";
 
 const box = await Box.create({
-  runtime: Runtime.Node,
+  runtime: "node",
   agent: { model: ClaudeCode.Sonnet_4_5 },
 });
 
@@ -39,12 +39,13 @@ Pass `apiKey` in the config or set the `UPSTASH_BOX_API_KEY` environment variabl
 Create a new sandboxed box.
 
 ```ts
-import { Box, Runtime, ClaudeCode, BoxApiKey } from "@upstash/box";
+import { Box, Agent, ClaudeCode, BoxApiKey } from "@upstash/box";
 
 const box = await Box.create({
   apiKey: "abx_...", // or set UPSTASH_BOX_API_KEY
-  runtime: Runtime.Node, // node, python, golang, ruby, rust
+  runtime: "node", // "node" | "python" | "golang" | "ruby" | "rust"
   agent: {
+    runner: Agent.ClaudeCode, // optional — inferred from model prefix
     model: ClaudeCode.Sonnet_4_5,
     apiKey: BoxApiKey.UpstashKey, // Upstash-managed key
     // apiKey: BoxApiKey.StoredKey,     // use a key stored via the Upstash console
@@ -167,6 +168,19 @@ const status = await box.git.status();
 await box.cd(".."); // back to /workspace/home
 ```
 
+### Model configuration
+
+```ts
+// Read the current runner and model
+const { runner, model } = box.modelConfig;
+
+// Change the model
+await box.configureModel(ClaudeCode.Opus_4_5);
+
+// modelConfig reflects the change immediately
+box.modelConfig.model; // "claude/opus_4_5"
+```
+
 ### Lifecycle
 
 ```ts
@@ -207,6 +221,16 @@ stream.status; // "completed" after iteration finishes
 stream.result; // final output
 ```
 
+## Agents
+
+The `runner` field in agent config is optional — the SDK infers it from the model prefix. You can set it explicitly to use a specific runner.
+
+| Enum               | Value         |
+| ------------------ | ------------- |
+| `Agent.ClaudeCode` | `claude-code` |
+| `Agent.Codex`      | `codex`       |
+| `Agent.OpenCode`   | `opencode`    |
+
 ## Models
 
 ### Claude Code
@@ -228,15 +252,23 @@ stream.result; // final output
 | `OpenAICodex.GPT_5_2_Codex`       | `openai/gpt-5.2-codex`       |
 | `OpenAICodex.GPT_5_1_Codex_Max`   | `openai/gpt-5.1-codex-max`   |
 
+### OpenRouter
+
+| Enum                               | Value                                   |
+| ---------------------------------- | --------------------------------------- |
+| `OpenRouterModel.Claude_Opus_4_5`  | `openrouter/anthropic/claude-opus-4-5`  |
+| `OpenRouterModel.Claude_Sonnet_4`  | `openrouter/anthropic/claude-sonnet-4`  |
+| `OpenRouterModel.Claude_Haiku_4_5` | `openrouter/anthropic/claude-haiku-4-5` |
+| `OpenRouterModel.DeepSeek_R1`      | `openrouter/deepseek/deepseek-r1`       |
+| `OpenRouterModel.Gemini_2_5_Pro`   | `openrouter/google/gemini-2.5-pro`      |
+| `OpenRouterModel.Gemini_2_5_Flash` | `openrouter/google/gemini-2.5-flash`    |
+| `OpenRouterModel.GPT_4_1`          | `openrouter/openai/gpt-4.1`             |
+| `OpenRouterModel.O3`               | `openrouter/openai/o3`                  |
+| `OpenRouterModel.O4_Mini`          | `openrouter/openai/o4-mini`             |
+
 ## Runtimes
 
-| Enum             | Value    |
-| ---------------- | -------- |
-| `Runtime.Node`   | `node`   |
-| `Runtime.Python` | `python` |
-| `Runtime.Golang` | `golang` |
-| `Runtime.Ruby`   | `ruby`   |
-| `Runtime.Rust`   | `rust`   |
+`Runtime` is a string union type: `"node" | "python" | "golang" | "ruby" | "rust"`
 
 ## Examples
 

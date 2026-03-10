@@ -29,10 +29,19 @@ import {
   type LogEntry,
   type UploadFileEntry,
   type Snapshot,
+  Agent,
 } from "./types.js";
 import type { ZodType } from "zod/v3";
 
 const DEFAULT_BASE_URL = "https://us-east-1.box.upstash.com";
+
+/** Infer the runner agent from a model string prefix. */
+export function inferDefaultRunner(model: string): Agent {
+  if (model.startsWith("openrouter/")) return Agent.ClaudeCode;
+  if (model.startsWith("opencode/")) return Agent.OpenCode;
+  if (model.startsWith("openai/")) return Agent.Codex;
+  return Agent.ClaudeCode;
+}
 
 /**
  * Error thrown by the Box SDK
@@ -188,10 +197,10 @@ export class StreamRun<T = string, C = Chunk> extends Run<T> implements AsyncIte
  *
  * @example
  * ```ts
- * import { Box, Runtime, ClaudeCode } from "@upstash/box";
+ * import { Box, ClaudeCode } from "@upstash/box";
  *
  * const box = await Box.create({
- *   runtime: Runtime.Node,
+ *   runtime: "node",
  *   agent: { model: ClaudeCode.Sonnet_4_5, apiKey: process.env.CLAUDE_KEY! },
  * });
  *
@@ -272,7 +281,14 @@ export class Box {
     return this._cwd;
   }
 
+  /** Current runner and model configured for this box. */
+  get modelConfig(): { runner: Agent | undefined; model: string | undefined } {
+    return { runner: this._agent, model: this._model };
+  }
+
   private _cwd: string;
+  private _model: string | undefined;
+  private _agent: Agent | undefined;
   private _baseUrl: string;
   private _headers: Record<string, string>;
   private _timeout: number;
@@ -310,6 +326,8 @@ export class Box {
   ) {
     this.id = data.id;
     this._cwd = Box.WORKSPACE;
+    this._model = data.model;
+    this._agent = data.agent;
     this._baseUrl = config.baseUrl;
     this._headers = config.headers;
     this._timeout = config.timeout;
@@ -395,6 +413,7 @@ export class Box {
     const body: Record<string, unknown> = {};
     if (config?.agent) {
       body.model = config.agent.model;
+      body.runner = config.agent.runner ?? inferDefaultRunner(config.agent.model);
       body.agent_api_key = config.agent.apiKey;
     }
     if (config?.runtime) body.runtime = config.runtime;
@@ -1364,6 +1383,16 @@ export class Box {
   }
 
   /**
+   * Update the AI model configured for this box.
+   */
+  async configureModel(model: string): Promise<void> {
+    await this._request("PUT", `/v2/box/${this.id}/config/model`, {
+      body: { model },
+    });
+    this._model = model;
+  }
+
+  /**
    * Pause the box (release compute, preserve state).
    */
   async pause(): Promise<void> {
@@ -1462,6 +1491,7 @@ export class Box {
     };
     if (config?.agent) {
       body.model = config.agent.model;
+      body.runner = config.agent.runner ?? inferDefaultRunner(config.agent.model);
       body.agent_api_key = config.agent.apiKey;
     }
     if (config?.runtime) body.runtime = config.runtime;
