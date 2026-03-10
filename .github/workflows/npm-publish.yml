@@ -89,6 +89,11 @@ jobs:
 
       - run: pnpm build
 
+      - name: Set package version
+        run: |
+          cd ${{ steps.parse.outputs.pkg_dir }}
+          npm version "${{ steps.parse.outputs.version }}" --no-git-tag-version
+
       - name: Publish (canary)
         if: needs.load.outputs.prerelease == 'true'
         run: pnpm --filter "${{ steps.parse.outputs.package }}" publish --tag canary --no-git-checks --access public
