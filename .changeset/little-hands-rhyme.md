@@ -1,0 +1,5 @@
+---
+"@upstash/box": patch
+---
+
+rerelease

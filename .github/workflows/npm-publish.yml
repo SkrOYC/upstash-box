@@ -92,7 +92,7 @@ jobs:
       - name: Set package version
         run: |
           cd ${{ steps.parse.outputs.pkg_dir }}
-          npm version "${{ steps.parse.outputs.version }}" --no-git-tag-version
+          npm version "${{ steps.parse.outputs.version }}" --no-git-tag-version --allow-same-version
 
       - name: Publish (canary)
         if: needs.load.outputs.prerelease == 'true'
