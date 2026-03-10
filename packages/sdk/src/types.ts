@@ -31,7 +31,6 @@ export enum ClaudeCode {
  */
 export enum OpenAICodex {
   GPT_5_3_Codex = "openai/gpt-5.3-codex",
-  GPT_5_3_Codex_Spark = "openai/gpt-5.3-codex-spark",
   GPT_5_2_Codex = "openai/gpt-5.2-codex",
   GPT_5_1_Codex_Max = "openai/gpt-5.1-codex-max",
   GPT_5_1_Codex_Mini = "openai/gpt-5.1-codex-mini",
@@ -65,28 +64,27 @@ export enum OpenCodeModel {
   Claude_Haiku_4_5 = "claude/haiku_4_5",
   // OpenAI models (direct provider key)
   GPT_5_3_Codex = "openai/gpt-5.3-codex",
-  GPT_5_3_Codex_Spark = "openai/gpt-5.3-codex-spark",
   GPT_5_2_Codex = "openai/gpt-5.2-codex",
   GPT_5_1_Codex_Max = "openai/gpt-5.1-codex-max",
   GPT_5_1_Codex_Mini = "openai/gpt-5.1-codex-mini",
   GPT_4_1 = "openai/gpt-4.1",
   O3 = "openai/o3",
   O4_Mini = "openai/o4-mini",
-  // OpenCode zen models (routed through OpenCode infrastructure)
+  // Free models
   Zen_GPT_5_Nano = "opencode/gpt-5-nano",
   Zen_MiniMax_M2_5_Free = "opencode/minimax-m2.5-free",
   Zen_Big_Pickle = "opencode/big-pickle",
+  // Paid models
   Zen_Claude_Sonnet_4_6 = "opencode/claude-sonnet-4-6",
   Zen_Claude_Sonnet_4_5 = "opencode/claude-sonnet-4-5",
+  Zen_Claude_Sonnet_4 = "opencode/claude-sonnet-4",
   Zen_Claude_Haiku_4_5 = "opencode/claude-haiku-4-5",
   Zen_Claude_Opus_4_6 = "opencode/claude-opus-4-6",
   Zen_Claude_Opus_4_5 = "opencode/claude-opus-4-5",
-  Zen_GPT_5_4 = "opencode/gpt-5.4",
-  Zen_GPT_5_3_Codex = "opencode/gpt-5.3-codex",
-  Zen_GPT_5_2_Codex = "opencode/gpt-5.2-codex",
+  Zen_Claude_Opus_4_1 = "opencode/claude-opus-4-1",
   Zen_Gemini_3_1_Pro = "opencode/gemini-3.1-pro",
+  Zen_Gemini_3_Pro = "opencode/gemini-3-pro",
   Zen_Gemini_3_Flash = "opencode/gemini-3-flash",
-  Zen_Qwen3_Coder = "opencode/qwen3-coder",
 }
 
 export enum BoxApiKey {
