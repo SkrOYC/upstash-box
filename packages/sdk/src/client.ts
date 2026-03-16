@@ -235,7 +235,7 @@ export class Box {
   /** File operations namespace */
   readonly files: {
     read: (path: string) => Promise<string>;
-    write: (options: { path: string; content: string }) => Promise<void>;
+    write: (options: { path: string; content: string; encoding?: "base64" }) => Promise<void>;
     list: (path?: string) => Promise<FileEntry[]>;
     upload: (files: UploadFileEntry[]) => Promise<void>;
     /**
@@ -372,7 +372,7 @@ export class Box {
 
     this.files = {
       read: (path) => this._readFile(path),
-      write: (opts) => this._writeFile(opts.path, opts.content),
+      write: (opts) => this._writeFile(opts.path, opts.content, opts.encoding),
       list: (path) => this._listFiles(path),
       upload: (files) => this._uploadFiles(files),
       download: (opts) => this._downloadFiles(opts?.folder),
@@ -1320,10 +1320,10 @@ export class Box {
     return data.content;
   }
 
-  private async _writeFile(path: string, content: string): Promise<void> {
+  private async _writeFile(path: string, content: string, encoding?: "base64"): Promise<void> {
     const resolved = this._resolvePath(path);
     await this._request("POST", `/v2/box/${this.id}/files/write`, {
-      body: { path: resolved, content },
+      body: { path: resolved, content, ...(encoding && { encoding }) },
     });
   }
 
@@ -1345,13 +1345,26 @@ export class Box {
 
   private async _uploadFiles(files: UploadFileEntry[]): Promise<void> {
     const fs = await this._getFs();
+
+    const formData = new FormData();
     for (const file of files) {
-      const content = await fs.readFile(file.path);
-      const base64 = content.toString("base64");
       const resolved = this._resolvePath(file.destination);
-      await this._request("POST", `/v2/box/${this.id}/files/write`, {
-        body: { path: resolved, content: base64, encoding: "base64" },
-      });
+      const buffer = await fs.readFile(file.path);
+      formData.append("paths", resolved);
+      formData.append("files", new Blob([buffer]), file.destination);
+    }
+
+    const url = `${this._baseUrl}/v2/box/${this.id}/files/upload`;
+    this.log(`POST ${url}`);
+    const response = await fetch(url, {
+      method: "POST",
+      headers: this._headers,
+      body: formData,
+    });
+
+    if (!response.ok) {
+      const msg = await parseErrorResponse(response);
+      throw new BoxError(msg, response.status);
     }
   }
 
