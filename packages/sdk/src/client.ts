@@ -27,6 +27,8 @@ import {
   type LogEntry,
   type UploadFileEntry,
   type Snapshot,
+  type Preview,
+  type PreviewCreateOptions,
   Agent,
 } from "./types.js";
 import type { ZodType } from "zod/v3";
@@ -274,6 +276,13 @@ export class Box {
     checkout: (options: GitCheckoutOptions) => Promise<void>;
   };
 
+  /** Preview operations namespace */
+  readonly preview: {
+    create: (options: PreviewCreateOptions) => Promise<Preview>;
+    list: () => Promise<{ previews: Preview[] }>;
+    delete: (port: number) => Promise<void>;
+  };
+
   /**
    * The current working directory tracked in the SDK (not in the box).
    * Every new session starts at /workspace/home.
@@ -385,6 +394,12 @@ export class Box {
       createPR: (options) => this._gitCreatePR(options),
       exec: (options) => this._gitExec(options),
       checkout: (options) => this._gitCheckout(options),
+    };
+
+    this.preview = {
+      create: (options) => this._previewCreate(options),
+      list: () => this._previewList(),
+      delete: (port) => this._previewDelete(port),
     };
   }
 
@@ -1759,6 +1774,26 @@ export class Box {
     await this._request("POST", `/v2/box/${this.id}/git/checkout`, {
       body: { branch: options.branch, ...(folder ? { folder } : {}) },
     });
+  }
+
+  // ==================== Preview (private, exposed via this.preview) ====================
+
+  private async _previewCreate(options: PreviewCreateOptions): Promise<Preview> {
+    return this._request<Preview>("POST", `/v2/box/${this.id}/preview`, {
+      body: {
+        port: options.port,
+        ...(options.bearerToken !== undefined && { bearer_token: options.bearerToken }),
+        ...(options.basicAuth !== undefined && { basic_auth: options.basicAuth }),
+      },
+    });
+  }
+
+  private async _previewList(): Promise<{ previews: Preview[] }> {
+    return this._request<{ previews: Preview[] }>("GET", `/v2/box/${this.id}/preview`);
+  }
+
+  private async _previewDelete(port: number): Promise<void> {
+    await this._request("DELETE", `/v2/box/${this.id}/preview/${port}`);
   }
 }
 
