@@ -133,13 +133,19 @@ describe("createCommand", () => {
       agentApiKey: "agent-key",
       runtime: "python",
       gitToken: "gh-tok",
+      gitUserName: "John Doe",
+      gitUserEmail: "john@example.com",
       env: ["FOO=bar", "BAZ=qux"],
     });
 
     expect(Box.create).toHaveBeenCalledWith(
       expect.objectContaining({
         runtime: "python",
-        git: { token: "gh-tok" },
+        git: {
+          token: "gh-tok",
+          userName: "John Doe",
+          userEmail: "john@example.com",
+        },
         env: { FOO: "bar", BAZ: "qux" },
       }),
     );

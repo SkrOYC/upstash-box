@@ -57,6 +57,55 @@ describe("Box git operations", () => {
       expect(result.sha).toBe("abc123");
       expect(result.message).toBe("fix bug");
     });
+
+    it("sends author override fields", async () => {
+      const { box, fetchMock } = await createTestBox();
+      fetchMock.mockResolvedValueOnce(mockResponse({ sha: "abc123", message: "fix bug" }));
+
+      await box.git.commit({
+        message: "fix bug",
+        authorName: "Jane Doe",
+        authorEmail: "jane@example.com",
+      });
+
+      const body = JSON.parse(fetchMock.mock.calls[1]![1]?.body as string);
+      expect(body.message).toBe("fix bug");
+      expect(body.author_name).toBe("Jane Doe");
+      expect(body.author_email).toBe("jane@example.com");
+    });
+  });
+
+  describe("git.updateConfig", () => {
+    it("updates git config and returns effective values", async () => {
+      const { box, fetchMock } = await createTestBox();
+      fetchMock.mockResolvedValueOnce(
+        mockResponse({ git_user_name: "John Doe", git_user_email: "john@example.com" }),
+      );
+
+      const result = await box.git.updateConfig({
+        userName: "John Doe",
+        userEmail: "john@example.com",
+      });
+
+      expect(result).toEqual({
+        git_user_name: "John Doe",
+        git_user_email: "john@example.com",
+      });
+
+      const [url, init] = fetchMock.mock.calls[1]!;
+      expect(url).toContain("/git-config");
+      expect(init?.method).toBe("PUT");
+      const body = JSON.parse(init?.body as string);
+      expect(body.git_user_name).toBe("John Doe");
+      expect(body.git_user_email).toBe("john@example.com");
+    });
+
+    it("throws when both fields are omitted", async () => {
+      const { box } = await createTestBox();
+      await expect(box.git.updateConfig({})).rejects.toThrow(
+        "At least one of userName or userEmail is required",
+      );
+    });
   });
 
   describe("git.push", () => {

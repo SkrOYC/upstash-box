@@ -70,11 +70,11 @@ describe("Box.fromSnapshot", () => {
     await expect(Box.fromSnapshot("snap-1", config)).rejects.toThrow("apiKey is required");
   });
 
-  it("throws when git is provided without token", async () => {
-    const config = { ...TEST_CONFIG, git: {} };
-    await expect(Box.fromSnapshot("snap-1", config)).rejects.toThrow(
-      "git.token is required when git is configured",
-    );
+  it("allows git object without token", async () => {
+    const data = { ...TEST_BOX_DATA, status: "running" };
+    vi.mocked(fetch).mockResolvedValueOnce(mockResponse(data));
+
+    await expect(Box.fromSnapshot("snap-1", { ...TEST_CONFIG, git: {} })).resolves.toBeDefined();
   });
 
   it("sends runtime and gitToken in body", async () => {

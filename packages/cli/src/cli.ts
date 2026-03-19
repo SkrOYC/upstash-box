@@ -30,6 +30,8 @@ program
     'Agent API key — omit to use Upstash-managed key, or pass "stored" to use a key saved in the Upstash console',
   )
   .option("--git-token <token>", "GitHub personal access token")
+  .option("--git-user-name <name>", "Git user.name to set in the box")
+  .option("--git-user-email <email>", "Git user.email to set in the box")
   .option(
     "--env <KEY=VAL>",
     "Environment variable (repeatable)",

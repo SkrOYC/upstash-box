@@ -15,6 +15,8 @@ export interface CreateFlags {
   agentRunner?: string;
   agentApiKey?: string | true;
   gitToken?: string;
+  gitUserName?: string;
+  gitUserEmail?: string;
   env?: string[];
 }
 
@@ -26,6 +28,8 @@ export async function createCommand(flags: CreateFlags): Promise<void> {
     flags.agentApiKey !== undefined ||
     flags.runtime !== undefined ||
     flags.gitToken !== undefined ||
+    flags.gitUserName !== undefined ||
+    flags.gitUserEmail !== undefined ||
     (flags.env !== undefined && flags.env.length > 0);
 
   if (!hasConfigFlags && process.stdin.isTTY) {
@@ -61,7 +65,14 @@ export async function createCommand(flags: CreateFlags): Promise<void> {
           apiKey: resolveAgentApiKey(flags.agentApiKey),
         }
       : undefined,
-    git: flags.gitToken ? { token: flags.gitToken } : undefined,
+    git:
+      flags.gitToken || flags.gitUserName || flags.gitUserEmail
+        ? {
+            token: flags.gitToken,
+            userName: flags.gitUserName,
+            userEmail: flags.gitUserEmail,
+          }
+        : undefined,
     env: Object.keys(env).length > 0 ? env : undefined,
   });
 
