@@ -119,14 +119,14 @@ describe("Box.create", () => {
     await expect(Box.create(config)).rejects.toThrow("agent.model is required");
   });
 
-  it("throws when git is provided without token", async () => {
-    const config = { ...TEST_CONFIG, git: {} };
-    await expect(Box.create(config)).rejects.toThrow(
-      "git.token is required when git is configured",
-    );
+  it("allows git object without token", async () => {
+    const data = { ...TEST_BOX_DATA, status: "running" };
+    vi.mocked(fetch).mockResolvedValueOnce(mockResponse(data));
+
+    await expect(Box.create({ ...TEST_CONFIG, git: {} })).resolves.toBeDefined();
   });
 
-  it("sends runtime, env, gitToken in body", async () => {
+  it("sends runtime, env, git config in body", async () => {
     const data = { ...TEST_BOX_DATA, status: "running" };
     vi.mocked(fetch).mockResolvedValueOnce(mockResponse(data));
 
@@ -134,13 +134,19 @@ describe("Box.create", () => {
       ...TEST_CONFIG,
       runtime: "python",
       env: { FOO: "bar" },
-      git: { token: "gh-tok" },
+      git: {
+        token: "gh-tok",
+        userName: "John Doe",
+        userEmail: "john@example.com",
+      },
     });
 
     const body = JSON.parse(vi.mocked(fetch).mock.calls[0]![1]?.body as string);
     expect(body.runtime).toBe("python");
     expect(body.env_vars).toEqual({ FOO: "bar" });
     expect(body.github_token).toBe("gh-tok");
+    expect(body.git_user_name).toBe("John Doe");
+    expect(body.git_user_email).toBe("john@example.com");
   });
 
   it("sends skills and mcpServers in body", async () => {

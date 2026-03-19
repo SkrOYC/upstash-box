@@ -22,6 +22,9 @@ import {
   type GitExecResult,
   type GitCheckoutOptions,
   type GitPROptions,
+  type GitCommitOptions,
+  type GitConfigUpdateOptions,
+  type GitConfig,
   type GitCommitResult,
   type PullRequest,
   type LogEntry,
@@ -270,7 +273,8 @@ export class Box {
     clone: (options: GitCloneOptions) => Promise<void>;
     diff: () => Promise<string>;
     status: () => Promise<string>;
-    commit: (options: { message: string }) => Promise<GitCommitResult>;
+    commit: (options: GitCommitOptions) => Promise<GitCommitResult>;
+    updateConfig: (options: GitConfigUpdateOptions) => Promise<GitConfig>;
     push: (options?: { branch?: string }) => Promise<void>;
     createPR: (options: GitPROptions) => Promise<PullRequest>;
     exec: (options: GitExecOptions) => Promise<GitExecResult>;
@@ -384,6 +388,7 @@ export class Box {
       diff: () => this._gitDiff(),
       status: () => this._gitStatus(),
       commit: (options) => this._gitCommit(options),
+      updateConfig: (options) => this._gitUpdateConfig(options),
       push: (options) => this._gitPush(options),
       createPR: (options) => this._gitCreatePR(options),
       exec: (options) => this._gitExec(options),
@@ -404,10 +409,6 @@ export class Box {
     if (config?.agent && !config.agent.model) {
       throw new BoxError("agent.model is required when agent is configured");
     }
-    if (config?.git && !config.git.token) {
-      throw new BoxError("git.token is required when git is configured");
-    }
-
     const baseUrl = (
       config?.baseUrl ??
       process.env.UPSTASH_BOX_BASE_URL ??
@@ -427,6 +428,8 @@ export class Box {
     }
     if (config?.runtime) body.runtime = config.runtime;
     if (config?.git?.token) body.github_token = config.git.token;
+    if (config?.git?.userName) body.git_user_name = config.git.userName;
+    if (config?.git?.userEmail) body.git_user_email = config.git.userEmail;
     if (config?.env) body.env_vars = config.env;
     if (config?.skills?.length) body.skills = config.skills;
     if (config?.mcpServers?.length) {
@@ -1552,10 +1555,6 @@ export class Box {
         "apiKey is required. Pass it in config or set UPSTASH_BOX_API_KEY env var.",
       );
     }
-    if (config?.git && !config.git.token) {
-      throw new BoxError("git.token is required when git is configured");
-    }
-
     const baseUrl = (
       config?.baseUrl ??
       process.env.UPSTASH_BOX_BASE_URL ??
@@ -1724,10 +1723,28 @@ export class Box {
     return data.status;
   }
 
-  private async _gitCommit(options: { message: string }): Promise<GitCommitResult> {
+  private async _gitCommit(options: GitCommitOptions): Promise<GitCommitResult> {
     const folder = this._getFolder();
     return this._request<GitCommitResult>("POST", `/v2/box/${this.id}/git/commit`, {
-      body: { message: options.message, ...(folder ? { folder } : {}) },
+      body: {
+        message: options.message,
+        author_name: options.authorName,
+        author_email: options.authorEmail,
+        ...(folder ? { folder } : {}),
+      },
+    });
+  }
+
+  private async _gitUpdateConfig(options: GitConfigUpdateOptions): Promise<GitConfig> {
+    if (!options.userName && !options.userEmail) {
+      throw new BoxError("At least one of userName or userEmail is required");
+    }
+
+    return this._request<GitConfig>("PUT", `/v2/box/${this.id}/git-config`, {
+      body: {
+        git_user_name: options.userName,
+        git_user_email: options.userEmail,
+      },
     });
   }
 

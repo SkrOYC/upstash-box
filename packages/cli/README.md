@@ -42,19 +42,23 @@ box create \
   --agent-api-key $CLAUDE_KEY \
   --runtime node \
   --git-token $GITHUB_TOKEN \
+  --git-user-name "John Doe" \
+  --git-user-email "john@example.com" \
   --env NODE_ENV=production \
   --env DEBUG=true
 ```
 
-| Flag               | Description                                                                                 | Default  |
-| ------------------ | ------------------------------------------------------------------------------------------- | -------- |
-| `--token`          | Upstash Box API token                                                                       |          |
-| `--runtime`        | Runtime environment (`node`, `python`, `golang`, `ruby`, `rust`)                            |          |
-| `--agent-model`    | Agent model identifier                                                                      |          |
-| `--agent-provider` | Agent provider (`claude-code`, `codex`, `opencode`) — inferred from model prefix if omitted | inferred |
-| `--agent-api-key`  | Agent API key — omit for Upstash-managed key, `stored` for a saved key, or a direct API key | Upstash  |
-| `--git-token`      | GitHub personal access token                                                                |          |
-| `--env KEY=VAL`    | Environment variable (repeatable)                                                           |          |
+| Flag               | Description                                                                                 | Default           |
+| ------------------ | ------------------------------------------------------------------------------------------- | ----------------- |
+| `--token`          | Upstash Box API token                                                                       |                   |
+| `--runtime`        | Runtime environment (`node`, `python`, `golang`, `ruby`, `rust`)                            |                   |
+| `--agent-model`    | Agent model identifier                                                                      |                   |
+| `--agent-provider` | Agent provider (`claude-code`, `codex`, `opencode`) — inferred from model prefix if omitted | inferred          |
+| `--agent-api-key`  | Agent API key — omit for Upstash-managed key, `stored` for a saved key, or a direct API key | Upstash           |
+| `--git-token`      | GitHub personal access token                                                                |                   |
+| `--git-user-name`  | Git `user.name` set globally in the box container                                           | `Upstash Box`     |
+| `--git-user-email` | Git `user.email` set globally in the box container                                          | `box@upstash.com` |
+| `--env KEY=VAL`    | Environment variable (repeatable)                                                           |                   |
 
 ### `box connect [box-id]`
 

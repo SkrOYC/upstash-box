@@ -142,6 +142,8 @@ export interface BoxConfig {
   agent?: AgentConfig;
   git?: {
     token?: string;
+    userName?: string;
+    userEmail?: string;
   };
   env?: Record<string, string>;
   /**
@@ -488,6 +490,22 @@ export interface GitPROptions {
   title: string;
   body?: string;
   base?: string;
+}
+
+export interface GitCommitOptions {
+  message: string;
+  authorName?: string;
+  authorEmail?: string;
+}
+
+export interface GitConfigUpdateOptions {
+  userName?: string;
+  userEmail?: string;
+}
+
+export interface GitConfig {
+  git_user_name: string;
+  git_user_email: string;
 }
 
 export interface GitCommitResult {

@@ -51,7 +51,13 @@ const box = await Box.create({
     // apiKey: BoxApiKey.StoredKey,     // use a key stored via the Upstash console
     // apiKey: process.env.CLAUDE_KEY!, // or pass a direct API key
   },
-  git: { token: process.env.GITHUB_TOKEN! },
+  // Optional git identity configured in the container on create
+  // Defaults: "Upstash Box" / "box@upstash.com"
+  git: {
+    token: process.env.GITHUB_TOKEN!,
+    userName: "John Doe",
+    userEmail: "john@example.com",
+  },
   env: { NODE_ENV: "production" },
   timeout: 600000,
   debug: false,
@@ -140,7 +146,18 @@ await box.files.download({ folder: "output/" });
 await box.git.clone({ repo: "https://github.com/user/repo", branch: "main" });
 const diff = await box.git.diff();
 const status = await box.git.status();
-await box.git.commit({ message: "feat: add feature" });
+await box.git.commit({
+  message: "feat: add feature",
+  authorName: "Jane Doe",
+  authorEmail: "jane@example.com",
+});
+
+const gitConfig = await box.git.updateConfig({
+  userName: "John Doe",
+  userEmail: "john@example.com",
+});
+console.log(gitConfig.git_user_name, gitConfig.git_user_email);
+
 await box.git.push({ branch: "main" });
 const pr = await box.git.createPR({ title: "New feature", body: "Description" });
 
