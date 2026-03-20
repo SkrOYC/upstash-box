@@ -38,10 +38,10 @@ describe.skipIf(!UPSTASH_BOX_API_KEY)("files", () => {
   });
 
   it("files: read with base64 encoding returns content", async () => {
-    const content = "hello world"
+    const content = "hello world";
     await box.files.write({ path: "binary-test.txt", content });
     const b64 = await box.files.read("binary-test.txt", { encoding: "base64" });
-    expect(b64).toBe(btoa(content))
+    expect(b64).toBe(btoa(content));
     expect(atob(b64)).toBe(content);
   });
 
