@@ -238,7 +238,7 @@ export class Box {
 
   /** File operations namespace */
   readonly files: {
-    read: (path: string) => Promise<string>;
+    read: (path: string, options?: { encoding?: "base64" }) => Promise<string>;
     write: (options: { path: string; content: string; encoding?: "base64" }) => Promise<void>;
     list: (path?: string) => Promise<FileEntry[]>;
     upload: (files: UploadFileEntry[]) => Promise<void>;
@@ -376,7 +376,7 @@ export class Box {
     };
 
     this.files = {
-      read: (path) => this._readFile(path),
+      read: (path, options) => this._readFile(path, options?.encoding),
       write: (opts) => this._writeFile(opts.path, opts.content, opts.encoding),
       list: (path) => this._listFiles(path),
       upload: (files) => this._uploadFiles(files),
@@ -1322,12 +1322,11 @@ export class Box {
     return `${this._cwd}/${p}`;
   }
 
-  private async _readFile(path: string): Promise<string> {
+  private async _readFile(path: string, encoding?: "base64"): Promise<string> {
     const resolved = this._resolvePath(path);
-    const data = await this._request<{ content: string }>(
-      "GET",
-      `/v2/box/${this.id}/files/read?path=${encodeURIComponent(resolved)}`,
-    );
+    let url = `/v2/box/${this.id}/files/read?path=${encodeURIComponent(resolved)}`;
+    if (encoding) url += `&encoding=${encodeURIComponent(encoding)}`;
+    const data = await this._request<{ content: string }>("GET", url);
     return data.content;
   }
 
@@ -1836,9 +1835,10 @@ export class EphemeralBox {
      * @example
      * ```ts
      * const content = await box.files.read("index.js");
+     * const b64 = await box.files.read("image.png", { encoding: "base64" });
      * ```
      */
-    read: (path: string) => Promise<string>;
+    read: (path: string, options?: { encoding?: "base64" }) => Promise<string>;
     /**
      * Write a file to the box.
      *
