@@ -37,6 +37,21 @@ describe.skipIf(!UPSTASH_BOX_API_KEY)("files", () => {
     expect(content).toBe("integration test content");
   });
 
+  it("files: read with base64 encoding returns content", async () => {
+    await box.files.write({ path: "b64-test.txt", content: "hello base64" });
+    const result = await box.files.read("b64-test.txt", { encoding: "base64" });
+    expect(typeof result).toBe("string");
+    expect(result.length).toBeGreaterThan(0);
+  });
+
+  it("files: write base64 then read base64 roundtrip", async () => {
+    const encoded = Buffer.from("roundtrip content").toString("base64");
+    await box.files.write({ path: "b64-roundtrip.txt", content: encoded, encoding: "base64" });
+    const result = await box.files.read("b64-roundtrip.txt", { encoding: "base64" });
+    expect(typeof result).toBe("string");
+    expect(result.length).toBeGreaterThan(0);
+  });
+
   it("files: list shows written file", async () => {
     const files = await box.files.list();
     const found = files.some((f) => f.name === "test-file.txt");
