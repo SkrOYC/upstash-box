@@ -26,6 +26,27 @@ describe("Box file operations", () => {
       const [url] = fetchMock.mock.calls[1]!;
       expect(url).toContain(encodeURIComponent("/etc/config"));
     });
+
+    it("reads a file with base64 encoding", async () => {
+      const { box, fetchMock } = await createTestBox();
+      fetchMock.mockResolvedValueOnce(mockResponse({ content: "aGVsbG8=" }));
+
+      const content = await box.files.read("image.png", { encoding: "base64" });
+      expect(content).toBe("aGVsbG8=");
+
+      const [url] = fetchMock.mock.calls[1]!;
+      expect(url).toContain("encoding=base64");
+    });
+
+    it("does not send encoding param when not specified", async () => {
+      const { box, fetchMock } = await createTestBox();
+      fetchMock.mockResolvedValueOnce(mockResponse({ content: "plain" }));
+
+      await box.files.read("file.txt");
+
+      const [url] = fetchMock.mock.calls[1]!;
+      expect(url).not.toContain("encoding");
+    });
   });
 
   describe("files.write", () => {

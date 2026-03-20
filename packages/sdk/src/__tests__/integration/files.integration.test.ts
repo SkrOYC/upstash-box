@@ -2,7 +2,7 @@ import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import { writeFileSync, readFileSync, existsSync, mkdirSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
-import { Box, ClaudeCode } from "../../index.js";
+import { Agent, Box, ClaudeCode } from "../../index.js";
 import { UPSTASH_BOX_API_KEY } from "./setup.js";
 
 describe.skipIf(!UPSTASH_BOX_API_KEY)("files", () => {
@@ -12,7 +12,7 @@ describe.skipIf(!UPSTASH_BOX_API_KEY)("files", () => {
   beforeAll(async () => {
     box = await Box.create({
       apiKey: UPSTASH_BOX_API_KEY!,
-      agent: { model: ClaudeCode.Opus_4_6 },
+      agent: { runner: Agent.ClaudeCode, model: ClaudeCode.Opus_4_6 },
     });
     tmpDir = join(tmpdir(), `box-test-${Date.now()}`);
     mkdirSync(tmpDir, { recursive: true });
@@ -20,7 +20,7 @@ describe.skipIf(!UPSTASH_BOX_API_KEY)("files", () => {
 
   afterAll(async () => {
     try {
-      await box?.delete();
+      // await box?.delete();
     } catch {
       // cleanup best-effort
     }
@@ -35,6 +35,23 @@ describe.skipIf(!UPSTASH_BOX_API_KEY)("files", () => {
     await box.files.write({ path: "test-file.txt", content: "integration test content" });
     const content = await box.files.read("test-file.txt");
     expect(content).toBe("integration test content");
+  });
+
+  it("files: read with base64 encoding returns content", async () => {
+    const content = "hello world";
+    await box.files.write({ path: "binary-test.txt", content });
+    const b64 = await box.files.read("binary-test.txt", { encoding: "base64" });
+    expect(b64).toBe(btoa(content));
+    expect(atob(b64)).toBe(content);
+  });
+
+  it("files: write base64 then read base64 roundtrip", async () => {
+    const original = "binary content: \x00\x01\x02\xff";
+    const encoded = Buffer.from(original, "binary").toString("base64");
+    await box.files.write({ path: "b64-roundtrip.bin", content: encoded, encoding: "base64" });
+    const readBack = await box.files.read("b64-roundtrip.bin", { encoding: "base64" });
+    const decoded = Buffer.from(readBack, "base64").toString("binary");
+    expect(decoded).toBe(original);
   });
 
   it("files: list shows written file", async () => {
