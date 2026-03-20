@@ -145,11 +145,16 @@ describe("EphemeralBox instance", () => {
     expect((box as any).preview).toBeUndefined();
   });
 
-  it("does not expose fork, snapshot, or fromSnapshot", async () => {
+  it("does not expose fork", async () => {
     const box = await createBox();
     expect((box as any).fork).toBeUndefined();
-    expect((box as any).snapshot).toBeUndefined();
-    expect((EphemeralBox as any).fromSnapshot).toBeUndefined();
+  });
+
+  it("exposes snapshot, listSnapshots, and deleteSnapshot", async () => {
+    const box = await createBox();
+    expect(typeof box.snapshot).toBe("function");
+    expect(typeof box.listSnapshots).toBe("function");
+    expect(typeof box.deleteSnapshot).toBe("function");
   });
 
   it("exposes cwd and cd", async () => {

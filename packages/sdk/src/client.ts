@@ -1930,6 +1930,28 @@ export class EphemeralBox {
   }
 
   /**
+   * Save workspace state as a snapshot for later restore.
+   * Creates the snapshot asynchronously and polls until ready.
+   */
+  async snapshot(options: { name: string }): Promise<Snapshot> {
+    return this._box.snapshot(options);
+  }
+
+  /**
+   * List all snapshots for this box.
+   */
+  async listSnapshots(): Promise<Snapshot[]> {
+    return this._box.listSnapshots();
+  }
+
+  /**
+   * Delete a snapshot.
+   */
+  async deleteSnapshot(snapshotId: string): Promise<void> {
+    return this._box.deleteSnapshot(snapshotId);
+  }
+
+  /**
    * Create a new ephemeral box.
    *
    * Ephemeral boxes are ready immediately — no polling required.
@@ -1971,6 +1993,69 @@ export class EphemeralBox {
     if (config?.runtime) body.runtime = config.runtime;
 
     const response = await fetch(`${baseUrl}/v2/box`, {
+      method: "POST",
+      headers: { ...headers, "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+
+    if (!response.ok) {
+      const msg = await parseErrorResponse(response);
+      throw new BoxError(msg, response.status);
+    }
+
+    const data = (await response.json()) as EphemeralBoxData;
+
+    const box = new Box(data, {
+      baseUrl,
+      headers,
+      timeout,
+      debug,
+    });
+
+    return new EphemeralBox(box, data.expires_at);
+  }
+
+  /**
+   * Create an ephemeral box from a snapshot.
+   *
+   * Ephemeral boxes are ready immediately — no polling required.
+   * They auto-delete after the configured TTL (default: 3 days).
+   *
+   * @example
+   * ```ts
+   * const box = await EphemeralBox.fromSnapshot("snap-abc123", { ttl: 3600 });
+   * ```
+   */
+  static async fromSnapshot(
+    snapshotId: string,
+    config?: EphemeralBoxConfig,
+  ): Promise<EphemeralBox> {
+    const apiKey = config?.apiKey ?? process.env.UPSTASH_BOX_API_KEY;
+    if (!apiKey) {
+      throw new BoxError(
+        "apiKey is required. Pass it in config or set UPSTASH_BOX_API_KEY env var.",
+      );
+    }
+
+    const baseUrl = (
+      config?.baseUrl ??
+      process.env.UPSTASH_BOX_BASE_URL ??
+      DEFAULT_BASE_URL
+    ).replace(/\/$/, "");
+    const headers: Record<string, string> = {
+      "X-Box-Api-Key": apiKey,
+    };
+    const timeout = config?.timeout ?? 600000;
+    const debug = config?.debug ?? false;
+
+    const body: Record<string, unknown> = {
+      snapshot_id: snapshotId,
+      ephemeral: true,
+    };
+    if (config?.ttl !== undefined) body.ttl = config.ttl;
+    if (config?.runtime) body.runtime = config.runtime;
+
+    const response = await fetch(`${baseUrl}/v2/box/from-snapshot`, {
       method: "POST",
       headers: { ...headers, "Content-Type": "application/json" },
       body: JSON.stringify(body),
