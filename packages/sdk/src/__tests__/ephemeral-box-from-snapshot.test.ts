@@ -87,13 +87,11 @@ describe("EphemeralBox.fromSnapshot", () => {
   });
 
   it("throws on API error response", async () => {
-    vi.mocked(fetch).mockResolvedValueOnce(
-      mockResponse({ error: "snapshot not found" }, 404),
-    );
+    vi.mocked(fetch).mockResolvedValueOnce(mockResponse({ error: "snapshot not found" }, 404));
 
-    await expect(
-      EphemeralBox.fromSnapshot("bad-snap", EPHEMERAL_CONFIG),
-    ).rejects.toThrow("snapshot not found");
+    await expect(EphemeralBox.fromSnapshot("bad-snap", EPHEMERAL_CONFIG)).rejects.toThrow(
+      "snapshot not found",
+    );
   });
 
   it("does not send agent or git fields", async () => {

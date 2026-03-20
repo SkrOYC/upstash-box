@@ -78,84 +78,87 @@ describe.skipIf(!UPSTASH_BOX_API_KEY)("EphemeralBox.fromSnapshot — from regula
   });
 });
 
-describe.skipIf(!UPSTASH_BOX_API_KEY)("EphemeralBox.fromSnapshot — from ephemeral Box snapshot", () => {
-  let sourceBox: EphemeralBox;
-  let restoredBox: EphemeralBox;
-  let snapshotId: string;
+describe.skipIf(!UPSTASH_BOX_API_KEY)(
+  "EphemeralBox.fromSnapshot — from ephemeral Box snapshot",
+  () => {
+    let sourceBox: EphemeralBox;
+    let restoredBox: EphemeralBox;
+    let snapshotId: string;
 
-  afterAll(async () => {
-    try {
-      await restoredBox?.delete();
-    } catch {
-      // cleanup best-effort
-    }
-    try {
-      if (snapshotId) await sourceBox?.deleteSnapshot(snapshotId);
-    } catch {
-      // cleanup best-effort
-    }
-    try {
-      await sourceBox?.delete();
-    } catch {
-      // cleanup best-effort
-    }
-  }, 30000);
+    afterAll(async () => {
+      try {
+        await restoredBox?.delete();
+      } catch {
+        // cleanup best-effort
+      }
+      try {
+        if (snapshotId) await sourceBox?.deleteSnapshot(snapshotId);
+      } catch {
+        // cleanup best-effort
+      }
+      try {
+        await sourceBox?.delete();
+      } catch {
+        // cleanup best-effort
+      }
+    }, 30000);
 
-  it("creates an ephemeral box and writes files", async () => {
-    sourceBox = await EphemeralBox.create({
-      apiKey: UPSTASH_BOX_API_KEY!,
-      runtime: "node",
-      ttl: 300,
+    it("creates an ephemeral box and writes files", async () => {
+      sourceBox = await EphemeralBox.create({
+        apiKey: UPSTASH_BOX_API_KEY!,
+        runtime: "node",
+        ttl: 300,
+      });
+
+      await sourceBox.files.write({ path: "ephemeral.txt", content: "ephemeral origin" });
+      await sourceBox.files.write({ path: "nested/data.json", content: '{"from":"ephemeral"}' });
+
+      const content = await sourceBox.files.read("ephemeral.txt");
+      expect(content).toBe("ephemeral origin");
+    }, 120000);
+
+    it("takes a snapshot of the ephemeral box", async () => {
+      const snap = await sourceBox.snapshot({ name: "ephemeral-to-ephemeral-test" });
+      expect(snap.id).toBeTruthy();
+      expect(snap.status).toBe("ready");
+      snapshotId = snap.id;
+    }, 120000);
+
+    it("lists the snapshot", async () => {
+      const snapshots = await sourceBox.listSnapshots();
+      expect(snapshots.some((s) => s.id === snapshotId)).toBe(true);
     });
 
-    await sourceBox.files.write({ path: "ephemeral.txt", content: "ephemeral origin" });
-    await sourceBox.files.write({ path: "nested/data.json", content: '{"from":"ephemeral"}' });
+    it("creates a new ephemeral box from the ephemeral snapshot", async () => {
+      restoredBox = await EphemeralBox.fromSnapshot(snapshotId, {
+        apiKey: UPSTASH_BOX_API_KEY!,
+        ttl: 300,
+      });
 
-    const content = await sourceBox.files.read("ephemeral.txt");
-    expect(content).toBe("ephemeral origin");
-  }, 120000);
+      expect(restoredBox.id).toBeTruthy();
+      expect(restoredBox.expiresAt).toBeGreaterThan(0);
+      expect(restoredBox.id).not.toBe(sourceBox.id);
+    }, 120000);
 
-  it("takes a snapshot of the ephemeral box", async () => {
-    const snap = await sourceBox.snapshot({ name: "ephemeral-to-ephemeral-test" });
-    expect(snap.id).toBeTruthy();
-    expect(snap.status).toBe("ready");
-    snapshotId = snap.id;
-  }, 120000);
+    it("snapshot files exist in the restored ephemeral box", async () => {
+      const txt = await restoredBox.files.read("ephemeral.txt");
+      expect(txt).toBe("ephemeral origin");
 
-  it("lists the snapshot", async () => {
-    const snapshots = await sourceBox.listSnapshots();
-    expect(snapshots.some((s) => s.id === snapshotId)).toBe(true);
-  });
-
-  it("creates a new ephemeral box from the ephemeral snapshot", async () => {
-    restoredBox = await EphemeralBox.fromSnapshot(snapshotId, {
-      apiKey: UPSTASH_BOX_API_KEY!,
-      ttl: 300,
+      const json = await restoredBox.files.read("nested/data.json");
+      expect(json).toBe('{"from":"ephemeral"}');
     });
 
-    expect(restoredBox.id).toBeTruthy();
-    expect(restoredBox.expiresAt).toBeGreaterThan(0);
-    expect(restoredBox.id).not.toBe(sourceBox.id);
-  }, 120000);
+    it("can list files from the restored box", async () => {
+      const files = await restoredBox.files.list();
+      const names = files.map((f) => f.name);
+      expect(names).toContain("ephemeral.txt");
+      expect(names).toContain("nested");
+    });
 
-  it("snapshot files exist in the restored ephemeral box", async () => {
-    const txt = await restoredBox.files.read("ephemeral.txt");
-    expect(txt).toBe("ephemeral origin");
-
-    const json = await restoredBox.files.read("nested/data.json");
-    expect(json).toBe('{"from":"ephemeral"}');
-  });
-
-  it("can list files from the restored box", async () => {
-    const files = await restoredBox.files.list();
-    const names = files.map((f) => f.name);
-    expect(names).toContain("ephemeral.txt");
-    expect(names).toContain("nested");
-  });
-
-  it("can write new files in the restored box", async () => {
-    await restoredBox.files.write({ path: "new-file.txt", content: "written after restore" });
-    const content = await restoredBox.files.read("new-file.txt");
-    expect(content).toBe("written after restore");
-  });
-});
+    it("can write new files in the restored box", async () => {
+      await restoredBox.files.write({ path: "new-file.txt", content: "written after restore" });
+      const content = await restoredBox.files.read("new-file.txt");
+      expect(content).toBe("written after restore");
+    });
+  },
+);
