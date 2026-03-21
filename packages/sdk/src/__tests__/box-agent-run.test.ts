@@ -383,29 +383,6 @@ describe("box.agent.stream", () => {
     expect(run.result).toBe("Hello world");
   });
 
-  it("still calls onChunk callback when provided", async () => {
-    const { box, fetchMock } = await createTestBox();
-    const callbackTypes: string[] = [];
-
-    fetchMock.mockResolvedValueOnce(
-      mockSSEResponse([
-        { event: "run_start", data: { run_id: "r1" } },
-        { event: "text", data: { text: "hi" } },
-        { event: "done", data: {} },
-      ]),
-    );
-
-    const run = await box.agent.stream({
-      prompt: "test",
-      onChunk: (part) => callbackTypes.push(part.type),
-    });
-    for await (const _ of run) {
-      // consume
-    }
-
-    expect(callbackTypes).toEqual(["start", "text-delta", "finish"]);
-  });
-
   it("throws on missing prompt", async () => {
     const { box } = await createTestBox();
     await expect(box.agent.stream({ prompt: "" })).rejects.toThrow("prompt is required");

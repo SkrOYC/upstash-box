@@ -799,7 +799,6 @@ export class Box {
           case "run_start": {
             if (parsed.run_id) Run._update(run, { id: parsed.run_id });
             const chunk: Chunk = { type: "start", runId: parsed.run_id ?? "" };
-            options.onChunk?.(chunk);
             return chunk;
           }
           case "text": {
@@ -807,7 +806,6 @@ export class Box {
             if (text) {
               rawOutput += text;
               const chunk: Chunk = { type: "text-delta", text };
-              options.onChunk?.(chunk);
               return chunk;
             }
             return null;
@@ -816,7 +814,6 @@ export class Box {
             const text = parsed.text ?? "";
             if (text) {
               const chunk: Chunk = { type: "reasoning", text };
-              options.onChunk?.(chunk);
               return chunk;
             }
             return null;
@@ -827,7 +824,6 @@ export class Box {
               toolName: parsed.name ?? "",
               input: parsed.input ?? {},
             };
-            options.onChunk?.(chunk);
             options.onToolUse?.({ name: parsed.name ?? "", input: parsed.input ?? {} });
             return chunk;
           }
@@ -846,7 +842,6 @@ export class Box {
               },
               sessionId: parsed.session_id ?? "",
             };
-            options.onChunk?.(chunk);
             return chunk;
           }
           case "stats": {
@@ -855,14 +850,12 @@ export class Box {
               cpuNs: parsed.cpu_ns ?? 0,
               memoryPeakBytes: parsed.memory_peak_bytes ?? 0,
             };
-            options.onChunk?.(chunk);
             return chunk;
           }
           case "error":
             throw new BoxError(parsed.error ?? "Stream error");
           default: {
             const chunk: Chunk = { type: "unknown", event: type, data: parsed };
-            options.onChunk?.(chunk);
             return chunk;
           }
         }
