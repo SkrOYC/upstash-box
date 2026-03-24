@@ -33,6 +33,9 @@ import {
   type Preview,
   type EphemeralBoxConfig,
   type EphemeralBoxData,
+  type ExecScheduleOptions,
+  type AgentScheduleOptions,
+  type Schedule,
   Agent,
 } from "./types.js";
 import type { ZodType } from "zod/v3";
@@ -268,6 +271,15 @@ export class Box {
     streamCode: (options: CodeExecutionOptions) => Promise<StreamRun<string, ExecStreamChunk>>;
   };
 
+  /** Schedule operations namespace */
+  readonly schedule: {
+    exec: (options: ExecScheduleOptions) => Promise<Schedule>;
+    agent: (options: AgentScheduleOptions) => Promise<Schedule>;
+    list: () => Promise<Schedule[]>;
+    get: (id: string) => Promise<Schedule>;
+    delete: (id: string) => Promise<void>;
+  };
+
   /** Git operations namespace */
   readonly git: {
     clone: (options: GitCloneOptions) => Promise<void>;
@@ -381,6 +393,14 @@ export class Box {
       list: (path) => this._listFiles(path),
       upload: (files) => this._uploadFiles(files),
       download: (opts) => this._downloadFiles(opts?.folder),
+    };
+
+    this.schedule = {
+      exec: (options) => this._scheduleExec(options),
+      agent: (options) => this._scheduleAgent(options),
+      list: () => this._scheduleList(),
+      get: (id) => this._scheduleGet(id),
+      delete: (id) => this._scheduleDelete(id),
     };
 
     this.git = {
@@ -1683,6 +1703,36 @@ export class Box {
     } finally {
       clearTimeout(timeoutId);
     }
+  }
+
+  // ==================== Schedule (private, exposed via this.schedule) ====================
+
+  private async _scheduleExec(options: ExecScheduleOptions): Promise<Schedule> {
+    return this._request<Schedule>("POST", `/v2/box/${this.id}/schedules`, {
+      body: { type: "exec", command: options.command, cron: options.cron },
+    });
+  }
+
+  private async _scheduleAgent(options: AgentScheduleOptions): Promise<Schedule> {
+    return this._request<Schedule>("POST", `/v2/box/${this.id}/schedules`, {
+      body: { type: "agent", prompt: options.prompt, cron: options.cron },
+    });
+  }
+
+  private async _scheduleList(): Promise<Schedule[]> {
+    const data = await this._request<{ schedules: Schedule[] }>(
+      "GET",
+      `/v2/box/${this.id}/schedules`,
+    );
+    return data.schedules;
+  }
+
+  private async _scheduleGet(id: string): Promise<Schedule> {
+    return this._request<Schedule>("GET", `/v2/box/${this.id}/schedules/${id}`);
+  }
+
+  private async _scheduleDelete(id: string): Promise<void> {
+    await this._request("DELETE", `/v2/box/${this.id}/schedules/${id}`);
   }
 
   // ==================== Git (private, exposed via this.git) ====================

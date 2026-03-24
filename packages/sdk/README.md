@@ -169,6 +169,33 @@ console.log(result.output);
 await box.git.checkout({ branch: "feature-branch" });
 ```
 
+### Schedules
+
+Create recurring tasks that run on a cron schedule — either shell commands or agent prompts.
+
+```ts
+// Schedule a shell command to run every minute
+const execSchedule = await box.schedule.exec({
+  cron: "* * * * *",
+  command: ["bash", "-c", "date >> /workspace/home/cron.log && echo scheduled-ok"],
+});
+
+// Schedule an agent prompt to run daily at 9am
+const agentSchedule = await box.schedule.agent({
+  cron: "0 9 * * *",
+  prompt: "Run the test suite and fix any failures",
+});
+
+// List all schedules
+const schedules = await box.schedule.list();
+
+// Get a specific schedule
+const schedule = await box.schedule.get(execSchedule.id);
+
+// Delete a schedule
+await box.schedule.delete(execSchedule.id);
+```
+
 ### Working directory
 
 ```ts

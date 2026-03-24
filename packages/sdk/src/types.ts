@@ -549,6 +549,40 @@ export interface BoxRunData {
   completed_at?: number;
 }
 
+// ==================== Schedule ====================
+
+/**
+ * Options for creating an exec schedule
+ */
+export interface ExecScheduleOptions {
+  /** Cron expression (e.g. "* * * * *") */
+  cron: string;
+  /** Command to execute as an array of arguments */
+  command: string[];
+}
+
+/**
+ * Options for creating an agent schedule
+ */
+export interface AgentScheduleOptions {
+  /** Cron expression (e.g. "0 9 * * *") */
+  cron: string;
+  /** The prompt/task for the AI agent */
+  prompt: string;
+}
+
+/**
+ * A scheduled task on a box
+ */
+export interface Schedule {
+  id: string;
+  type: "exec" | "agent";
+  cron: string;
+  command?: string[];
+  prompt?: string;
+  created_at: number;
+}
+
 // ==================== Preview ====================
 
 /**
