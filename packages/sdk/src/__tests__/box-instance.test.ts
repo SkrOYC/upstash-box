@@ -254,7 +254,7 @@ describe("Box instance methods", () => {
       await box.updateNetworkPolicy({ mode: "allow-all" });
 
       const [url, init] = fetchMock.mock.calls[1]!;
-      expect(url).toContain("/v2/box/box-123/network-policy");
+      expect(url).toContain("/v2/box/box-123/config/network-policy");
       expect(init?.method).toBe("PUT");
       const body = JSON.parse(init?.body as string);
       expect(body).toEqual({ mode: "allow-all" });
