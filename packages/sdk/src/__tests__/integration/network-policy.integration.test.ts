@@ -89,7 +89,6 @@ describe.skipIf(!UPSTASH_BOX_API_KEY)("box.updateNetworkPolicy", () => {
     expect(before.exitCode).toBe(0);
 
     console.log(box.id);
-    
 
     // Switch to deny-all
     await box.updateNetworkPolicy({ mode: "deny-all" });
