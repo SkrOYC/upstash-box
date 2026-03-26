@@ -35,7 +35,7 @@ import {
   type EphemeralBoxData,
   type NetworkPolicy,
   type ExecScheduleOptions,
-  type AgentScheduleOptions,
+  type PromptScheduleOptions,
   type Schedule,
   Agent,
 } from "./types.js";
@@ -280,9 +280,11 @@ export class Box {
   /** Schedule operations namespace */
   readonly schedule: {
     exec: (options: ExecScheduleOptions) => Promise<Schedule>;
-    agent: (options: AgentScheduleOptions) => Promise<Schedule>;
+    prompt: (options: PromptScheduleOptions) => Promise<Schedule>;
     list: () => Promise<Schedule[]>;
     get: (id: string) => Promise<Schedule>;
+    pause: (id: string) => Promise<void>;
+    resume: (id: string) => Promise<void>;
     delete: (id: string) => Promise<void>;
   };
 
@@ -407,9 +409,11 @@ export class Box {
 
     this.schedule = {
       exec: (options) => this._scheduleExec(options),
-      agent: (options) => this._scheduleAgent(options),
+      prompt: (options) => this._schedulePrompt(options),
       list: () => this._scheduleList(),
       get: (id) => this._scheduleGet(id),
+      pause: (id) => this._schedulePause(id),
+      resume: (id) => this._scheduleResume(id),
       delete: (id) => this._scheduleDelete(id),
     };
 
@@ -1732,27 +1736,44 @@ export class Box {
   // ==================== Schedule (private, exposed via this.schedule) ====================
 
   private async _scheduleExec(options: ExecScheduleOptions): Promise<Schedule> {
-    return this._request<Schedule>("POST", `/v2/box/${this.id}/schedules`, {
-      body: { type: "exec", command: options.command, cron: options.cron },
-    });
+    const body: Record<string, unknown> = {
+      type: "exec",
+      cron: options.cron,
+      command: options.command,
+      folder: options.folder ? this._resolvePath(options.folder) : this._cwd,
+    };
+    if (options.webhookUrl) body.webhook_url = options.webhookUrl;
+    if (options.webhookHeaders) body.webhook_headers = options.webhookHeaders;
+    return this._request<Schedule>("POST", `/v2/box/${this.id}/schedules`, { body });
   }
 
-  private async _scheduleAgent(options: AgentScheduleOptions): Promise<Schedule> {
-    return this._request<Schedule>("POST", `/v2/box/${this.id}/schedules`, {
-      body: { type: "agent", prompt: options.prompt, cron: options.cron },
-    });
+  private async _schedulePrompt(options: PromptScheduleOptions): Promise<Schedule> {
+    const body: Record<string, unknown> = {
+      type: "prompt",
+      cron: options.cron,
+      prompt: options.prompt,
+      folder: options.folder ? this._resolvePath(options.folder) : this._cwd,
+    };
+    if (options.model) body.model = options.model;
+    if (options.webhookUrl) body.webhook_url = options.webhookUrl;
+    if (options.webhookHeaders) body.webhook_headers = options.webhookHeaders;
+    return this._request<Schedule>("POST", `/v2/box/${this.id}/schedules`, { body });
   }
 
   private async _scheduleList(): Promise<Schedule[]> {
-    const data = await this._request<{ schedules: Schedule[] }>(
-      "GET",
-      `/v2/box/${this.id}/schedules`,
-    );
-    return data.schedules;
+    return this._request<Schedule[]>("GET", `/v2/box/${this.id}/schedules`);
   }
 
   private async _scheduleGet(id: string): Promise<Schedule> {
     return this._request<Schedule>("GET", `/v2/box/${this.id}/schedules/${id}`);
+  }
+
+  private async _schedulePause(id: string): Promise<void> {
+    await this._request("POST", `/v2/box/${this.id}/schedules/${id}/pause`);
+  }
+
+  private async _scheduleResume(id: string): Promise<void> {
+    await this._request("POST", `/v2/box/${this.id}/schedules/${id}/resume`);
   }
 
   private async _scheduleDelete(id: string): Promise<void> {
@@ -1953,6 +1974,9 @@ export class EphemeralBox {
     streamCode: (options: CodeExecutionOptions) => Promise<StreamRun<string, ExecStreamChunk>>;
   };
 
+  /** Schedule operations namespace */
+  readonly schedule: Box["schedule"];
+
   private _box: Box;
 
   /** @internal */
@@ -1962,6 +1986,7 @@ export class EphemeralBox {
     this.expiresAt = expiresAt;
     this.exec = box.exec;
     this.files = box.files;
+    this.schedule = box.schedule;
   }
 
   /**

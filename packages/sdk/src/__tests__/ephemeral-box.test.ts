@@ -183,6 +183,18 @@ describe("EphemeralBox instance", () => {
     expect(typeof box.files.download).toBe("function");
   });
 
+  it("exposes schedule namespace", async () => {
+    const box = await createBox();
+    expect(box.schedule).toBeDefined();
+    expect(typeof box.schedule.exec).toBe("function");
+    expect(typeof box.schedule.prompt).toBe("function");
+    expect(typeof box.schedule.list).toBe("function");
+    expect(typeof box.schedule.get).toBe("function");
+    expect(typeof box.schedule.pause).toBe("function");
+    expect(typeof box.schedule.resume).toBe("function");
+    expect(typeof box.schedule.delete).toBe("function");
+  });
+
   it("does not expose agent, git, or preview namespaces", async () => {
     const box = await createBox();
     expect((box as any).agent).toBeUndefined();

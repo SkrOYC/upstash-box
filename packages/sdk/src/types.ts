@@ -567,12 +567,11 @@ export interface ErrorResponse {
 /**
  * Backend run record — returned by Box.listRuns()
  */
-export interface BoxRunData {
+export type BoxRunData = {
   id: string;
   box_id: string;
   customer_id: string;
   type: "agent" | "shell";
-  status: "running" | "completed" | "failed" | "cancelled";
   prompt?: string;
   model?: string;
   output?: string;
@@ -587,28 +586,47 @@ export interface BoxRunData {
   session_id?: string;
   created_at: number;
   completed_at?: number;
-}
+} & (
+  | { schedule_id?: never; status: "running" | "completed" | "failed" | "cancelled" }
+  | { schedule_id: string; status: "completed" | "failed" | "skipped" }
+);
 
 // ==================== Schedule ====================
+
+export type ScheduleStatus = "active" | "paused" | "deleted";
 
 /**
  * Options for creating an exec schedule
  */
 export interface ExecScheduleOptions {
-  /** Cron expression (e.g. "* * * * *") */
+  /** Cron expression (e.g. "* * * * *"). UTC. */
   cron: string;
-  /** Command to execute as an array of arguments */
+  /** Command and arguments to execute */
   command: string[];
+  /** Working directory override */
+  folder?: string;
+  /** URL to POST results to after each run */
+  webhookUrl?: string;
+  /** Custom headers sent with webhook */
+  webhookHeaders?: Record<string, string>;
 }
 
 /**
- * Options for creating an agent schedule
+ * Options for creating a prompt schedule
  */
-export interface AgentScheduleOptions {
-  /** Cron expression (e.g. "0 9 * * *") */
+export interface PromptScheduleOptions {
+  /** Cron expression (e.g. "0 9 * * *"). UTC. */
   cron: string;
   /** The prompt/task for the AI agent */
   prompt: string;
+  /** Working directory override */
+  folder?: string;
+  /** Model override. Defaults to the box's configured model. */
+  model?: string;
+  /** URL to POST results to after each run */
+  webhookUrl?: string;
+  /** Custom headers sent with webhook */
+  webhookHeaders?: Record<string, string>;
 }
 
 /**
@@ -616,11 +634,25 @@ export interface AgentScheduleOptions {
  */
 export interface Schedule {
   id: string;
-  type: "exec" | "agent";
+  box_id: string;
+  customer_id?: string;
+  type: "exec" | "prompt";
   cron: string;
   command?: string[];
   prompt?: string;
+  folder?: string;
+  model?: string;
+  status: ScheduleStatus;
+  qstash_schedule_id?: string;
+  webhook_url?: string;
+  webhook_headers?: Record<string, string>;
+  last_run_at?: number;
+  last_run_status?: "completed" | "failed" | "skipped";
+  last_run_id?: string;
+  total_runs: number;
+  total_failures: number;
   created_at: number;
+  updated_at: number;
 }
 
 // ==================== Preview ====================
