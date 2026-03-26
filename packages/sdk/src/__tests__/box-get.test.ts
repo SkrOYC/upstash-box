@@ -47,7 +47,7 @@ describe("Box.get", () => {
   it("fetches an existing box by name", async () => {
     vi.mocked(fetch).mockResolvedValueOnce(mockResponse(TEST_BOX_DATA));
 
-    const box = await Box.get("my-box", {
+    const box = await Box.getByName("my-box", {
       apiKey: TEST_CONFIG.apiKey,
       baseUrl: TEST_CONFIG.baseUrl,
     });

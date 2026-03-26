@@ -21,7 +21,7 @@ describe.skipIf(!UPSTASH_BOX_API_KEY)("Box.create — name", () => {
       name,
     });
 
-    const fetched = await Box.get(name, { apiKey: UPSTASH_BOX_API_KEY! });
+    const fetched = await Box.getByName(name, { apiKey: UPSTASH_BOX_API_KEY! });
 
     expect(fetched.id).toBe(box.id);
   }, 120000);
@@ -62,7 +62,7 @@ describe.skipIf(!UPSTASH_BOX_API_KEY)("Box.fromSnapshot — name", () => {
       name,
     });
 
-    const fetched = await Box.get(name, { apiKey: UPSTASH_BOX_API_KEY! });
+    const fetched = await Box.getByName(name, { apiKey: UPSTASH_BOX_API_KEY! });
 
     expect(fetched.id).toBe(restoredBox.id);
   }, 240000);
@@ -88,7 +88,7 @@ describe.skipIf(!UPSTASH_BOX_API_KEY)("EphemeralBox.create — name", () => {
       ttl: 300,
     });
 
-    const fetched = await Box.get(name, { apiKey: UPSTASH_BOX_API_KEY! });
+    const fetched = await EphemeralBox.getByName(name, { apiKey: UPSTASH_BOX_API_KEY! });
 
     expect(fetched.id).toBe(box.id);
   }, 30000);
@@ -133,7 +133,7 @@ describe.skipIf(!UPSTASH_BOX_API_KEY)("EphemeralBox.fromSnapshot — name", () =
       ttl: 300,
     });
 
-    const fetched = await Box.get(name, { apiKey: UPSTASH_BOX_API_KEY! });
+    const fetched = await EphemeralBox.getByName(name, { apiKey: UPSTASH_BOX_API_KEY! });
 
     expect(fetched.id).toBe(restoredBox.id);
   }, 240000);

@@ -72,6 +72,14 @@ Reconnect to an existing box by ID.
 const box = await Box.get("box_abc123");
 ```
 
+#### `Box.getByName(name: string, options?: BoxGetOptions): Promise<Box>`
+
+Get an existing box by name.
+
+```ts
+const box = await Box.getByName("my-box");
+```
+
 #### `Box.list(options?: ListOptions): Promise<BoxData[]>`
 
 List all boxes for the authenticated user.

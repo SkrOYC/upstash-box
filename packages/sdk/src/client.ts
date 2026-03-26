@@ -546,7 +546,7 @@ export class Box {
   }
 
   /**
-   * Get an existing box by ID or box name
+   * Get an existing box by ID
    */
   static async get(boxId: string, options?: BoxGetOptions): Promise<Box> {
     const apiKey = options?.apiKey ?? process.env.UPSTASH_BOX_API_KEY;
@@ -581,6 +581,11 @@ export class Box {
       isAgentConfigured: Boolean(data.model),
     });
   }
+
+  /**
+   * Get an existing box by name
+   */
+  static getByName = Box.get;
 
   // ==================== Run ====================
 
@@ -2179,6 +2184,11 @@ export class EphemeralBox {
 
     return new EphemeralBox(box, data.expires_at);
   }
+
+  /**
+   * Get an existing ephemeral box by name
+   */
+  static getByName = Box.get;
 }
 
 // ==================== Helpers ====================
