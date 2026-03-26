@@ -33,6 +33,7 @@ import {
   type Preview,
   type EphemeralBoxConfig,
   type EphemeralBoxData,
+  type NetworkPolicy,
   type ExecScheduleOptions,
   type AgentScheduleOptions,
   type Schedule,
@@ -230,6 +231,11 @@ export class StreamRun<T = string, C = Chunk> extends Run<T> implements AsyncIte
 export class Box {
   readonly id: string;
 
+  /** Current network access policy for this box. */
+  get networkPolicy(): NetworkPolicy | undefined {
+    return this._networkPolicy;
+  }
+
   /** Agent operations namespace */
   readonly agent: {
     run<T>(
@@ -312,6 +318,7 @@ export class Box {
   }
 
   private _cwd: string;
+  private _networkPolicy: NetworkPolicy | undefined;
   private _model: string | undefined;
   private _agent: Agent | undefined;
   private _baseUrl: string;
@@ -351,6 +358,9 @@ export class Box {
   ) {
     this.id = data.id;
     this._cwd = Box.WORKSPACE;
+    this._networkPolicy = data.network_policy
+      ? deserializeNetworkPolicy(data.network_policy)
+      : { mode: "allow-all" };
     this._model = data.model;
     this._agent = data.agent;
     this._baseUrl = config.baseUrl;
@@ -452,6 +462,7 @@ export class Box {
     if (config?.git?.userName) body.git_user_name = config.git.userName;
     if (config?.git?.userEmail) body.git_user_email = config.git.userEmail;
     if (config?.env) body.env_vars = config.env;
+    if (config?.networkPolicy) body.network_policy = serializeNetworkPolicy(config.networkPolicy);
     if (config?.skills?.length) body.skills = config.skills;
     if (config?.mcpServers?.length) {
       body.mcp_servers = config.mcpServers.map((s) => ({
@@ -1439,6 +1450,16 @@ export class Box {
   }
 
   /**
+   * Update the network access policy for this box.
+   */
+  async updateNetworkPolicy(policy: NetworkPolicy): Promise<void> {
+    await this._request("PUT", `/v2/box/${this.id}/network-policy`, {
+      body: serializeNetworkPolicy(policy),
+    });
+    this._networkPolicy = policy;
+  }
+
+  /**
    * Pause the box (release compute, preserve state).
    */
   async pause(): Promise<void> {
@@ -1589,6 +1610,7 @@ export class Box {
     if (config?.runtime) body.runtime = config.runtime;
     if (config?.git?.token) body.github_token = config.git.token;
     if (config?.env) body.env_vars = config.env;
+    if (config?.networkPolicy) body.network_policy = serializeNetworkPolicy(config.networkPolicy);
 
     const response = await fetch(`${baseUrl}/v2/box/from-snapshot`, {
       method: "POST",
@@ -1946,6 +1968,11 @@ export class EphemeralBox {
    * The current working directory tracked in the SDK.
    * Every new session starts at `/workspace/home`.
    */
+  /** Current network access policy for this box. */
+  get networkPolicy(): NetworkPolicy {
+    return this._box.networkPolicy!;
+  }
+
   get cwd(): string {
     return this._box.cwd;
   }
@@ -2039,6 +2066,7 @@ export class EphemeralBox {
     if (config?.ttl !== undefined) body.ttl = config.ttl;
     if (config?.runtime) body.runtime = config.runtime;
     if (config?.env) body.env_vars = config.env;
+    if (config?.networkPolicy) body.network_policy = serializeNetworkPolicy(config.networkPolicy);
 
     const response = await fetch(`${baseUrl}/v2/box`, {
       method: "POST",
@@ -2104,6 +2132,7 @@ export class EphemeralBox {
     if (config?.ttl !== undefined) body.ttl = config.ttl;
     if (config?.runtime) body.runtime = config.runtime;
     if (config?.env) body.env_vars = config.env;
+    if (config?.networkPolicy) body.network_policy = serializeNetworkPolicy(config.networkPolicy);
 
     const response = await fetch(`${baseUrl}/v2/box/from-snapshot`, {
       method: "POST",
@@ -2144,6 +2173,38 @@ export function toJsonSchema(schema: ZodType<any>): Record<string, unknown> | nu
     // Not a Zod schema or conversion failed
   }
   return null;
+}
+
+/** Serialize a NetworkPolicy into the API wire format. */
+function serializeNetworkPolicy(policy: NetworkPolicy): Record<string, unknown> {
+  if (policy.mode === "custom") {
+    return {
+      mode: policy.mode,
+      allowed_domains: policy.allowedDomains,
+      allowed_cidrs: policy.allowedCidrs,
+      denied_cidrs: policy.deniedCidrs,
+    };
+  }
+  return { mode: policy.mode };
+}
+
+/** Deserialize the API wire format into a NetworkPolicy. */
+function deserializeNetworkPolicy(raw: BoxData["network_policy"]): NetworkPolicy {
+  if (!raw) {
+    return {
+      mode: "allow-all",
+    };
+  }
+
+  if (raw.mode === "custom") {
+    return {
+      mode: "custom",
+      allowedDomains: raw.allowed_domains,
+      allowedCidrs: raw.allowed_cidrs,
+      deniedCidrs: raw.denied_cidrs,
+    };
+  }
+  return { mode: raw.mode };
 }
 
 /** @internal */

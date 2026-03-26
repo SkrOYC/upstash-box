@@ -57,6 +57,42 @@ describe("Box.get", () => {
     expect(url).toBe(`${TEST_CONFIG.baseUrl}/v2/box/my-box`);
   });
 
+  it("deserializes networkPolicy from response", async () => {
+    const data = {
+      ...TEST_BOX_DATA,
+      network_policy: {
+        mode: "custom" as const,
+        allowed_domains: ["example.com"],
+        allowed_cidrs: ["10.0.0.0/8"],
+        denied_cidrs: ["192.168.0.0/16"],
+      },
+    };
+    vi.mocked(fetch).mockResolvedValueOnce(mockResponse(data));
+
+    const box = await Box.get("box-123", {
+      apiKey: TEST_CONFIG.apiKey,
+      baseUrl: TEST_CONFIG.baseUrl,
+    });
+
+    expect(box.networkPolicy).toEqual({
+      mode: "custom",
+      allowedDomains: ["example.com"],
+      allowedCidrs: ["10.0.0.0/8"],
+      deniedCidrs: ["192.168.0.0/16"],
+    });
+  });
+
+  it("networkPolicy defaults to allow-all when not in response", async () => {
+    vi.mocked(fetch).mockResolvedValueOnce(mockResponse(TEST_BOX_DATA));
+
+    const box = await Box.get("box-123", {
+      apiKey: TEST_CONFIG.apiKey,
+      baseUrl: TEST_CONFIG.baseUrl,
+    });
+
+    expect(box.networkPolicy).toEqual({ mode: "allow-all" });
+  });
+
   it("passes gitToken and timeout options", async () => {
     vi.mocked(fetch).mockResolvedValueOnce(mockResponse(TEST_BOX_DATA));
 

@@ -136,6 +136,32 @@ export type AgentConfig = {
     }
 );
 
+/**
+ * Network access policy for a box.
+ *
+ * Controls which outbound destinations the box is allowed to reach.
+ *
+ * @example
+ * ```ts
+ * // Allow all outbound traffic (default)
+ * { mode: "allow-all" }
+ *
+ * // Block all outbound traffic
+ * { mode: "deny-all" }
+ *
+ * // Custom rules
+ * { mode: "custom", allowedDomains: ["api.example.com"], deniedCidrs: ["10.0.0.0/8"] }
+ * ```
+ */
+export type NetworkPolicy =
+  | { mode: "allow-all" | "deny-all" }
+  | {
+      mode: "custom";
+      allowedDomains?: string[];
+      allowedCidrs?: string[];
+      deniedCidrs?: string[];
+    };
+
 export interface BoxConfig {
   apiKey?: string;
   /** Human-readable name for the box */
@@ -148,6 +174,8 @@ export interface BoxConfig {
     userEmail?: string;
   };
   env?: Record<string, string>;
+  /** Network access policy — controls outbound connectivity */
+  networkPolicy?: NetworkPolicy;
   /**
    * GitHub repositories to install as skills on the box.
    *
@@ -183,6 +211,8 @@ export interface EphemeralBoxConfig {
   ttl?: number;
   /** Environment variables to inject into the box. */
   env?: Record<string, string>;
+  /** Network access policy — controls outbound connectivity */
+  networkPolicy?: NetworkPolicy;
   /** Base URL of the Box API (defaults to https://us-east-1.box.upstash.com) */
   baseUrl?: string;
   /** Request timeout in milliseconds (defaults to 600000) */
@@ -434,6 +464,12 @@ export type BoxData = {
   agent?: Agent;
   runtime?: string;
   status: BoxStatus;
+  network_policy?: {
+    mode: "allow-all" | "deny-all" | "custom";
+    allowed_domains?: string[];
+    allowed_cidrs?: string[];
+    denied_cidrs?: string[];
+  };
   clone_repo?: string;
   total_input_tokens?: number;
   total_output_tokens?: number;
