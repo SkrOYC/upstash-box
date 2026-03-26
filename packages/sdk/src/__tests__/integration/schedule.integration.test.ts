@@ -44,7 +44,7 @@ describe.skipIf(!UPSTASH_BOX_API_KEY)("schedule", () => {
     await box.schedule.delete(schedule.id);
   }, 30000);
 
-  it("schedule.prompt: creates and verifies all fields via list", async () => {
+  it("schedule.agent: creates and verifies all fields via list", async () => {
     const schedule = await box.schedule.agent({
       cron: "0 9 * * *",
       prompt: "Run the test suite",
@@ -56,7 +56,7 @@ describe.skipIf(!UPSTASH_BOX_API_KEY)("schedule", () => {
     expect(schedule.id).toBeDefined();
     expect(schedule.type).toBe("prompt");
     expect(schedule.status).toBe("active");
-    expect(schedule.prompt).toBe("Run the test suite");
+    expect(schedule.agent).toBe("Run the test suite");
     expect(schedule.model).toBe("claude/sonnet_4_6");
 
     const list = await box.schedule.list();

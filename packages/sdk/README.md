@@ -171,7 +171,7 @@ await box.git.checkout({ branch: "feature-branch" });
 
 ### Schedules
 
-Create recurring tasks that run on a cron schedule — either shell commands or agent prompts.
+Create recurring tasks that run on a cron schedule — either shell commands (`exec`) or AI agent prompts (`agent`). Schedules can be paused, resumed, and deleted. Available on both `Box` and `EphemeralBox`.
 
 ```ts
 // Schedule a shell command to run every minute
@@ -186,15 +186,22 @@ const agentSchedule = await box.schedule.agent({
   prompt: "Run the test suite and fix any failures",
 });
 
-// List all schedules
+// List all active and paused schedules.
 const schedules = await box.schedule.list();
 
-// Get a specific schedule
-const schedule = await box.schedule.get(execSchedule.id);
+// Get a specific schedule by ID.
+const schedule = await box.schedule.get("sched-abc123");
 
-// Delete a schedule
-await box.schedule.delete(execSchedule.id);
+// Pause a schedule. It won't fire until resumed.
+await box.schedule.pause(schedule.id);
+
+// Resume a paused schedule.
+await box.schedule.resume(schedule.id);
+
+// Delete a schedule permanently.
+await box.schedule.delete(schedule.id);
 ```
+
 
 ### Working directory
 

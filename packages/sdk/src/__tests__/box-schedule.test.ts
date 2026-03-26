@@ -74,7 +74,7 @@ describe("Box schedule operations", () => {
     });
   });
 
-  describe("schedule.prompt", () => {
+  describe("schedule.agent", () => {
     it("creates a prompt schedule", async () => {
       const { box, fetchMock } = await createTestBox();
       const schedule = {
