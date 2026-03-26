@@ -546,7 +546,7 @@ export class Box {
   }
 
   /**
-   * Get an existing box by ID.
+   * Get an existing box by ID or box name
    */
   static async get(boxId: string, options?: BoxGetOptions): Promise<Box> {
     const apiKey = options?.apiKey ?? process.env.UPSTASH_BOX_API_KEY;
