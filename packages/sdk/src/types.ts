@@ -464,6 +464,9 @@ export type BoxData = {
   agent?: Agent;
   runtime?: string;
   status: BoxStatus;
+  /**
+   * Network access policy for this box. If omitted, defaults to allow-all
+   */
   network_policy?: {
     mode: "allow-all" | "deny-all" | "custom";
     allowed_domains?: string[];

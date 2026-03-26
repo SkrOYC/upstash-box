@@ -232,7 +232,7 @@ export class Box {
   readonly id: string;
 
   /** Current network access policy for this box. */
-  get networkPolicy(): NetworkPolicy | undefined {
+  get networkPolicy(): NetworkPolicy {
     return this._networkPolicy;
   }
 
@@ -320,7 +320,7 @@ export class Box {
   }
 
   private _cwd: string;
-  private _networkPolicy: NetworkPolicy | undefined;
+  private _networkPolicy: NetworkPolicy;
   private _model: string | undefined;
   private _agent: Agent | undefined;
   private _baseUrl: string;
@@ -360,9 +360,7 @@ export class Box {
   ) {
     this.id = data.id;
     this._cwd = Box.WORKSPACE;
-    this._networkPolicy = data.network_policy
-      ? deserializeNetworkPolicy(data.network_policy)
-      : { mode: "allow-all" };
+    this._networkPolicy = deserializeNetworkPolicy(data.network_policy);
     this._model = data.model;
     this._agent = data.agent;
     this._baseUrl = config.baseUrl;
@@ -1995,7 +1993,7 @@ export class EphemeralBox {
    */
   /** Current network access policy for this box. */
   get networkPolicy(): NetworkPolicy {
-    return this._box.networkPolicy!;
+    return this._box.networkPolicy;
   }
 
   get cwd(): string {
@@ -2216,11 +2214,8 @@ function serializeNetworkPolicy(policy: NetworkPolicy): Record<string, unknown> 
 /** Deserialize the API wire format into a NetworkPolicy. */
 function deserializeNetworkPolicy(raw: BoxData["network_policy"]): NetworkPolicy {
   if (!raw) {
-    return {
-      mode: "allow-all",
-    };
+    return { mode: "allow-all" };
   }
-
   if (raw.mode === "custom") {
     return {
       mode: "custom",

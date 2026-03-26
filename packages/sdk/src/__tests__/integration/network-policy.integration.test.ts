@@ -2,6 +2,24 @@ import { describe, it, expect, afterAll } from "vitest";
 import { Box, EphemeralBox } from "../../index.js";
 import { UPSTASH_BOX_API_KEY } from "./setup.js";
 
+describe.skipIf(!UPSTASH_BOX_API_KEY)("Box.create — default networkPolicy", () => {
+  let box: Box | undefined;
+
+  afterAll(async () => {
+    try {
+      await box?.delete();
+    } catch {
+      // cleanup best-effort
+    }
+  }, 30000);
+
+  it("defaults to allow-all when networkPolicy is not specified", async () => {
+    box = await Box.create({ apiKey: UPSTASH_BOX_API_KEY! });
+
+    expect(box.networkPolicy).toEqual({ mode: "allow-all" });
+  }, 120000);
+});
+
 describe.skipIf(!UPSTASH_BOX_API_KEY)("Box.create — networkPolicy", () => {
   let box: Box | undefined;
 
@@ -87,8 +105,6 @@ describe.skipIf(!UPSTASH_BOX_API_KEY)("box.updateNetworkPolicy", () => {
     // Should work under allow-all
     const before = await box.exec.command("curl -s --max-time 10 https://mock.httpstatus.io/200");
     expect(before.exitCode).toBe(0);
-
-    console.log(box.id);
 
     // Switch to deny-all
     await box.updateNetworkPolicy({ mode: "deny-all" });
