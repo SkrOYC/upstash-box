@@ -56,7 +56,7 @@ describe.skipIf(!UPSTASH_BOX_API_KEY)("schedule", () => {
     expect(schedule.id).toBeDefined();
     expect(schedule.type).toBe("prompt");
     expect(schedule.status).toBe("active");
-    expect(schedule.agent).toBe("Run the test suite");
+    expect(schedule.prompt).toBe("Run the test suite");
     expect(schedule.model).toBe("claude/sonnet_4_6");
 
     const list = await box.schedule.list();
