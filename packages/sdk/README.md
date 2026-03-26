@@ -202,7 +202,6 @@ await box.schedule.resume(schedule.id);
 await box.schedule.delete(schedule.id);
 ```
 
-
 ### Working directory
 
 ```ts
