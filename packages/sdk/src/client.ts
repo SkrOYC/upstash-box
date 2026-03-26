@@ -1457,7 +1457,7 @@ export class Box {
    * Update the network access policy for this box.
    */
   async updateNetworkPolicy(policy: NetworkPolicy): Promise<void> {
-    await this._request("PUT", `/v2/box/${this.id}/network-policy`, {
+    await this._request("PUT", `/v2/box/${this.id}/config/network-policy`, {
       body: serializeNetworkPolicy(policy),
     });
     this._networkPolicy = policy;

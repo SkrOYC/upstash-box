@@ -85,8 +85,11 @@ describe.skipIf(!UPSTASH_BOX_API_KEY)("box.updateNetworkPolicy", () => {
     expect(box.networkPolicy).toEqual({ mode: "allow-all" });
 
     // Should work under allow-all
-    const before = await box.exec.command("curl -s --max-time 10 https://example.com");
+    const before = await box.exec.command("curl -s --max-time 10 https://mock.httpstatus.io/200");
     expect(before.exitCode).toBe(0);
+
+    console.log(box.id);
+    
 
     // Switch to deny-all
     await box.updateNetworkPolicy({ mode: "deny-all" });
@@ -99,7 +102,7 @@ describe.skipIf(!UPSTASH_BOX_API_KEY)("box.updateNetworkPolicy", () => {
     await box.updateNetworkPolicy({ mode: "allow-all" });
     expect(box.networkPolicy).toEqual({ mode: "allow-all" });
 
-    const after = await box.exec.command("curl -s --max-time 10 https://example.com");
+    const after = await box.exec.command("curl -s --max-time 10 https://mock.httpstatus.io/200");
     expect(after.exitCode).toBe(0);
   }, 180000);
 
