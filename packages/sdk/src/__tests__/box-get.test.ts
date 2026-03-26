@@ -44,6 +44,19 @@ describe("Box.get", () => {
     expect(box.id).toBe("box-123");
   });
 
+  it("fetches an existing box by name", async () => {
+    vi.mocked(fetch).mockResolvedValueOnce(mockResponse(TEST_BOX_DATA));
+
+    const box = await Box.get("my-box", {
+      apiKey: TEST_CONFIG.apiKey,
+      baseUrl: TEST_CONFIG.baseUrl,
+    });
+    expect(box.id).toBe("box-123");
+
+    const [url] = vi.mocked(fetch).mock.calls[0]!;
+    expect(url).toBe(`${TEST_CONFIG.baseUrl}/v2/box/my-box`);
+  });
+
   it("passes gitToken and timeout options", async () => {
     vi.mocked(fetch).mockResolvedValueOnce(mockResponse(TEST_BOX_DATA));
 

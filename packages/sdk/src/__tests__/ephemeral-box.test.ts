@@ -93,6 +93,15 @@ describe("EphemeralBox.create", () => {
     expect(body.ttl).toBe(0);
   });
 
+  it("sends name in body when provided", async () => {
+    vi.mocked(fetch).mockResolvedValueOnce(mockResponse(EPHEMERAL_BOX_DATA));
+
+    await EphemeralBox.create({ ...EPHEMERAL_CONFIG, name: "my-ephemeral" });
+
+    const body = JSON.parse(vi.mocked(fetch).mock.calls[0]![1]?.body as string);
+    expect(body.name).toBe("my-ephemeral");
+  });
+
   it("throws when apiKey is missing", async () => {
     await expect(EphemeralBox.create()).rejects.toThrow("apiKey is required");
   });

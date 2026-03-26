@@ -138,6 +138,8 @@ export type AgentConfig = {
 
 export interface BoxConfig {
   apiKey?: string;
+  /** Human-readable name for the box */
+  name?: string;
   runtime?: Runtime;
   agent?: AgentConfig;
   git?: {
@@ -173,6 +175,8 @@ export interface BoxConfig {
 export interface EphemeralBoxConfig {
   /** Upstash Box API key. Falls back to UPSTASH_BOX_API_KEY env var. */
   apiKey?: string;
+  /** Human-readable name for the box */
+  name?: string;
   /** Runtime environment for the box. */
   runtime?: Runtime;
   /** Time-to-live in seconds. Max 259200 (3 days). Defaults to 259200 if omitted. */

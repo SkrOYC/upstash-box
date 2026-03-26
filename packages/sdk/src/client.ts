@@ -441,6 +441,7 @@ export class Box {
     const debug = config?.debug ?? false;
 
     const body: Record<string, unknown> = {};
+    if (config?.name) body.name = config.name;
     if (config?.agent) {
       body.model = config.agent.model;
       body.agent = config.agent.provider ?? config.agent.runner;
@@ -1579,6 +1580,7 @@ export class Box {
     const body: Record<string, unknown> = {
       snapshot_id: snapshotId,
     };
+    if (config?.name) body.name = config.name;
     if (config?.agent) {
       body.model = config.agent.model;
       body.agent = config.agent.provider ?? config.agent.runner;
@@ -2033,6 +2035,7 @@ export class EphemeralBox {
     const debug = config?.debug ?? false;
 
     const body: Record<string, unknown> = { ephemeral: true };
+    if (config?.name) body.name = config.name;
     if (config?.ttl !== undefined) body.ttl = config.ttl;
     if (config?.runtime) body.runtime = config.runtime;
     if (config?.env) body.env_vars = config.env;
@@ -2097,6 +2100,7 @@ export class EphemeralBox {
       snapshot_id: snapshotId,
       ephemeral: true,
     };
+    if (config?.name) body.name = config.name;
     if (config?.ttl !== undefined) body.ttl = config.ttl;
     if (config?.runtime) body.runtime = config.runtime;
     if (config?.env) body.env_vars = config.env;

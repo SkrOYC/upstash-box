@@ -188,6 +188,26 @@ describe("Box.create", () => {
     ]);
   });
 
+  it("sends name in body when provided", async () => {
+    const data = { ...TEST_BOX_DATA, status: "running" };
+    vi.mocked(fetch).mockResolvedValueOnce(mockResponse(data));
+
+    await Box.create({ ...TEST_CONFIG, name: "my-box" });
+
+    const body = JSON.parse(vi.mocked(fetch).mock.calls[0]![1]?.body as string);
+    expect(body.name).toBe("my-box");
+  });
+
+  it("omits name from body when not provided", async () => {
+    const data = { ...TEST_BOX_DATA, status: "running" };
+    vi.mocked(fetch).mockResolvedValueOnce(mockResponse(data));
+
+    await Box.create(TEST_CONFIG);
+
+    const body = JSON.parse(vi.mocked(fetch).mock.calls[0]![1]?.body as string);
+    expect(body.name).toBeUndefined();
+  });
+
   it("throws on API error response", async () => {
     vi.mocked(fetch).mockResolvedValueOnce(mockResponse({ error: "rate limited" }, 429));
 
