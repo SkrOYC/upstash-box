@@ -59,7 +59,7 @@ export type {
   EphemeralBoxConfig,
   EphemeralBoxData,
   ExecScheduleOptions,
-  PromptScheduleOptions,
+  AgentScheduleOptions,
   Schedule,
   ScheduleStatus,
 } from "./types.js";

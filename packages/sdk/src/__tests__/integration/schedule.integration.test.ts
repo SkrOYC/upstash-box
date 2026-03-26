@@ -45,7 +45,7 @@ describe.skipIf(!UPSTASH_BOX_API_KEY)("schedule", () => {
   }, 30000);
 
   it("schedule.prompt: creates and verifies all fields via list", async () => {
-    const schedule = await box.schedule.prompt({
+    const schedule = await box.schedule.agent({
       cron: "0 9 * * *",
       prompt: "Run the test suite",
       model: "claude/sonnet_4_6",
@@ -112,7 +112,7 @@ describe.skipIf(!UPSTASH_BOX_API_KEY)("schedule", () => {
     await box.exec.command("mkdir -p /workspace/home/parent/child");
     await box.cd("parent");
 
-    const schedule = await box.schedule.prompt({
+    const schedule = await box.schedule.agent({
       cron: "0 0 * * *",
       prompt: "test relative folder",
       folder: "child",

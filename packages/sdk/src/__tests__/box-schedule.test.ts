@@ -91,7 +91,7 @@ describe("Box schedule operations", () => {
       };
       fetchMock.mockResolvedValueOnce(mockResponse(schedule));
 
-      const result = await box.schedule.prompt({
+      const result = await box.schedule.agent({
         cron: "0 9 * * *",
         prompt: "Run tests",
       });
@@ -123,7 +123,7 @@ describe("Box schedule operations", () => {
         }),
       );
 
-      await box.schedule.prompt({
+      await box.schedule.agent({
         cron: "0 9 * * *",
         prompt: "Run tests",
         model: "claude/sonnet_4_6",
@@ -297,7 +297,7 @@ describe("Box schedule operations", () => {
         }),
       );
 
-      await box.schedule.prompt({
+      await box.schedule.agent({
         cron: "* * * * *",
         prompt: "test",
         folder: "/opt/custom",

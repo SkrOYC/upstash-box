@@ -187,7 +187,7 @@ describe("EphemeralBox instance", () => {
     const box = await createBox();
     expect(box.schedule).toBeDefined();
     expect(typeof box.schedule.exec).toBe("function");
-    expect(typeof box.schedule.prompt).toBe("function");
+    expect(typeof box.schedule.agent).toBe("function");
     expect(typeof box.schedule.list).toBe("function");
     expect(typeof box.schedule.get).toBe("function");
     expect(typeof box.schedule.pause).toBe("function");

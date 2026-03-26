@@ -35,7 +35,7 @@ import {
   type EphemeralBoxData,
   type NetworkPolicy,
   type ExecScheduleOptions,
-  type PromptScheduleOptions,
+  type AgentScheduleOptions,
   type Schedule,
   Agent,
 } from "./types.js";
@@ -280,7 +280,7 @@ export class Box {
   /** Schedule operations namespace */
   readonly schedule: {
     exec: (options: ExecScheduleOptions) => Promise<Schedule>;
-    prompt: (options: PromptScheduleOptions) => Promise<Schedule>;
+    agent: (options: AgentScheduleOptions) => Promise<Schedule>;
     list: () => Promise<Schedule[]>;
     get: (id: string) => Promise<Schedule>;
     pause: (id: string) => Promise<void>;
@@ -407,7 +407,7 @@ export class Box {
 
     this.schedule = {
       exec: (options) => this._scheduleExec(options),
-      prompt: (options) => this._schedulePrompt(options),
+      agent: (options) => this._scheduleAgent(options),
       list: () => this._scheduleList(),
       get: (id) => this._scheduleGet(id),
       pause: (id) => this._schedulePause(id),
@@ -1745,7 +1745,7 @@ export class Box {
     return this._request<Schedule>("POST", `/v2/box/${this.id}/schedules`, { body });
   }
 
-  private async _schedulePrompt(options: PromptScheduleOptions): Promise<Schedule> {
+  private async _scheduleAgent(options: AgentScheduleOptions): Promise<Schedule> {
     const body: Record<string, unknown> = {
       type: "prompt",
       cron: options.cron,

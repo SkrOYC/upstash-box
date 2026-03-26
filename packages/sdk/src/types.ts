@@ -617,7 +617,7 @@ export interface ExecScheduleOptions {
 /**
  * Options for creating a prompt schedule
  */
-export interface PromptScheduleOptions {
+export interface AgentScheduleOptions {
   /** Cron expression (e.g. "0 9 * * *"). UTC. */
   cron: string;
   /** The prompt/task for the AI agent */
