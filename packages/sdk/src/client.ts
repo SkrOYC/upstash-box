@@ -515,7 +515,7 @@ export class Box {
       timeout,
       debug,
       gitToken: config?.git?.token,
-      isAgentConfigured: Boolean(config?.agent),
+      isAgentConfigured: Boolean(data.agent),
     });
   }
 
@@ -1611,7 +1611,7 @@ export class Box {
       timeout,
       debug,
       gitToken: config?.git?.token,
-      isAgentConfigured: Boolean(config?.agent),
+      isAgentConfigured: Boolean(data.model),
     });
   }
 
