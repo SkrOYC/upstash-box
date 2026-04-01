@@ -18,10 +18,17 @@ export {
 
 export type {
   Runtime,
+  BoxSize,
   AgentConfig,
+  AgentOptions,
+  ClaudeCodeAgentOptions,
+  CodexAgentOptions,
+  OpenCodeAgentOptions,
   BoxConfig,
+  BoxConnectionOptions,
   BoxGetOptions,
   ListOptions,
+  PromptFiles,
   RunOptions,
   StreamOptions,
   Chunk,

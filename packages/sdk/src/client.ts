@@ -1,10 +1,13 @@
 import { zodToJsonSchema as zodToJsonSchemaLib } from "zod-to-json-schema";
 import {
   type BoxConfig,
+  type BoxConnectionOptions,
   type BoxData,
   type BoxGetOptions,
   type BoxRunData,
+  type BoxSize,
   type ListOptions,
+  type PromptFiles,
   type RunOptions,
   type StreamOptions,
   type Chunk,
@@ -37,6 +40,9 @@ import {
   type ExecScheduleOptions,
   type AgentScheduleOptions,
   type Schedule,
+  type ClaudeCodeAgentOptions,
+  type CodexAgentOptions,
+  type OpenCodeAgentOptions,
   Agent,
 } from "./types.js";
 import type { ZodType } from "zod/v3";
@@ -53,6 +59,31 @@ export function inferDefaultProvider(model: string): Agent {
 
 /** @deprecated Use `inferDefaultProvider` instead. */
 export const inferDefaultRunner = inferDefaultProvider;
+
+/** Map of camelCase Codex option keys to their snake_case backend equivalents. */
+const CODEX_KEY_MAP: Record<keyof CodexAgentOptions, string> = {
+  modelReasoningEffort: "model_reasoning_effort",
+  modelReasoningSummary: "model_reasoning_summary",
+  personality: "personality",
+  webSearch: "web_search",
+};
+
+/** Convert camelCase Codex agent options to the snake_case keys the backend expects. */
+function toBackendAgentOptions(
+  agent: Agent | undefined,
+  options:
+    | ClaudeCodeAgentOptions
+    | CodexAgentOptions
+    | OpenCodeAgentOptions
+    | Record<string, unknown>,
+): Record<string, unknown> {
+  if (agent !== Agent.Codex) return options as Record<string, unknown>;
+  const mapped: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(options)) {
+    mapped[CODEX_KEY_MAP[key as keyof CodexAgentOptions] ?? key] = value;
+  }
+  return mapped;
+}
 
 /**
  * Error thrown by the Box SDK
@@ -228,8 +259,11 @@ export class StreamRun<T = string, C = Chunk> extends Run<T> implements AsyncIte
  * await box.delete();
  * ```
  */
-export class Box {
+export class Box<TProvider = unknown> {
   readonly id: string;
+
+  /** Resource size of this box (`"small"`, `"medium"`, or `"large"`). */
+  readonly size: BoxSize;
 
   /** Current network access policy for this box. */
   get networkPolicy(): NetworkPolicy {
@@ -239,10 +273,12 @@ export class Box {
   /** Agent operations namespace */
   readonly agent: {
     run<T>(
-      options: RunOptions<T> & { responseSchema: RunOptions<T>["responseSchema"] },
+      options: RunOptions<T, TProvider> & {
+        responseSchema: RunOptions<T, TProvider>["responseSchema"];
+      },
     ): Promise<Run<T>>;
-    run(options: RunOptions): Promise<Run<string>>;
-    stream(options: StreamOptions): Promise<StreamRun<string, Chunk>>;
+    run(options: RunOptions<undefined, TProvider>): Promise<Run<string>>;
+    stream(options: StreamOptions<TProvider>): Promise<StreamRun<string, Chunk>>;
   };
 
   /** File operations namespace */
@@ -299,6 +335,16 @@ export class Box {
     createPR: (options: GitPROptions) => Promise<PullRequest>;
     exec: (options: GitExecOptions) => Promise<GitExecResult>;
     checkout: (options: GitCheckoutOptions) => Promise<void>;
+  };
+
+  /** Skills namespace — manage platform skills from the Context7 registry */
+  readonly skills: {
+    /** Add a skill. Format: `owner/repo/skill-name`. */
+    add: (skillId: string) => Promise<void>;
+    /** Remove a skill. Format: `owner/repo/skill-name`. */
+    remove: (skillId: string) => Promise<void>;
+    /** List enabled skills for this box. */
+    list: () => Promise<string[]>;
   };
 
   /**
@@ -359,6 +405,7 @@ export class Box {
     },
   ) {
     this.id = data.id;
+    this.size = data.size ?? "small";
     this._cwd = Box.WORKSPACE;
     this._networkPolicy = deserializeNetworkPolicy(data.network_policy);
     this._model = data.model;
@@ -426,12 +473,18 @@ export class Box {
       exec: (options) => this._gitExec(options),
       checkout: (options) => this._gitCheckout(options),
     };
+
+    this.skills = {
+      add: (skillId) => this._skillAdd(skillId),
+      remove: (skillId) => this._skillRemove(skillId),
+      list: () => this._skillList(),
+    };
   }
 
   /**
    * Create a new sandboxed box.
    */
-  static async create(config?: BoxConfig): Promise<Box> {
+  static async create<TProvider = unknown>(config?: BoxConfig): Promise<Box<TProvider>> {
     const apiKey = config?.apiKey ?? process.env.UPSTASH_BOX_API_KEY;
     if (!apiKey) {
       throw new BoxError(
@@ -454,6 +507,7 @@ export class Box {
 
     const body: Record<string, unknown> = {};
     if (config?.name) body.name = config.name;
+    if (config?.size) body.size = config.size;
     if (config?.agent) {
       body.model = config.agent.model;
       body.agent = config.agent.provider ?? config.agent.runner;
@@ -547,9 +601,47 @@ export class Box {
   }
 
   /**
+   * Delete specific boxes by ID.
+   */
+  static async delete(
+    options: BoxConnectionOptions & { boxIds: string | string[] },
+  ): Promise<void> {
+    const apiKey = options.apiKey ?? process.env.UPSTASH_BOX_API_KEY;
+    if (!apiKey) {
+      throw new BoxError(
+        "apiKey is required. Pass it in options or set UPSTASH_BOX_API_KEY env var.",
+      );
+    }
+
+    const baseUrl = (
+      options.baseUrl ??
+      process.env.UPSTASH_BOX_BASE_URL ??
+      DEFAULT_BASE_URL
+    ).replace(/\/$/, "");
+    const headers: Record<string, string> = {
+      "X-Box-Api-Key": apiKey,
+      "Content-Type": "application/json",
+    };
+
+    const ids = Array.isArray(options.boxIds) ? options.boxIds : [options.boxIds];
+    const response = await fetch(`${baseUrl}/v2/box`, {
+      method: "DELETE",
+      headers,
+      body: JSON.stringify({ ids }),
+    });
+    if (!response.ok) {
+      const msg = await parseErrorResponse(response);
+      throw new BoxError(msg, response.status);
+    }
+  }
+
+  /**
    * Get an existing box by ID
    */
-  static async get(boxId: string, options?: BoxGetOptions): Promise<Box> {
+  static async get<TProvider = unknown>(
+    boxId: string,
+    options?: BoxGetOptions,
+  ): Promise<Box<TProvider>> {
     const apiKey = options?.apiKey ?? process.env.UPSTASH_BOX_API_KEY;
     if (!apiKey) {
       throw new BoxError(
@@ -619,15 +711,23 @@ export class Box {
         requestBody.json_schema = jsonSchema;
       }
     }
+    if (options.options)
+      requestBody.agent_options = toBackendAgentOptions(this._agent, options.options);
     requestBody.webhook = options.webhook.headers
       ? { url: options.webhook.url, headers: options.webhook.headers }
       : { url: options.webhook.url };
 
     const url = `${this._baseUrl}/v2/box/${this.id}/run`;
+    const { body: fetchBody, headers: fetchHeaders } = await buildRunRequest(
+      this._headers,
+      requestBody,
+      options.files,
+    );
+
     const response = await fetch(url, {
       method: "POST",
-      headers: { ...this._headers, "Content-Type": "application/json" },
-      body: JSON.stringify(requestBody),
+      headers: fetchHeaders,
+      body: fetchBody,
     });
 
     if (!response.ok) {
@@ -635,8 +735,8 @@ export class Box {
       throw new BoxError(msg, response.status);
     }
 
-    const data = (await response.json()) as { status: string; box_id: string };
-    Run._update(run, { id: data.box_id, status: "running" });
+    const data = (await response.json()) as { status: string; run_id: string };
+    Run._update(run, { id: data.run_id, status: "running" });
 
     return run;
   }
@@ -679,12 +779,20 @@ export class Box {
         requestBody.json_schema = jsonSchema;
       }
     }
+    if (options.options)
+      requestBody.agent_options = toBackendAgentOptions(this._agent, options.options);
 
     const url = `${this._baseUrl}/v2/box/${this.id}/run/stream`;
+    const { body: fetchBody, headers: fetchHeaders } = await buildRunRequest(
+      this._headers,
+      requestBody,
+      options.files,
+    );
+
     const response = await fetch(url, {
       method: "POST",
-      headers: { ...this._headers, "Content-Type": "application/json" },
-      body: JSON.stringify(requestBody),
+      headers: fetchHeaders,
+      body: fetchBody,
       signal: abortController.signal,
     });
 
@@ -813,11 +921,22 @@ export class Box {
     }
 
     const folder = this._getFolder();
+    const requestBody: Record<string, unknown> = { prompt: options.prompt };
+    if (folder) requestBody.folder = folder;
+    if (options.options)
+      requestBody.agent_options = toBackendAgentOptions(this._agent, options.options);
+
     const url = `${this._baseUrl}/v2/box/${this.id}/run/stream`;
+    const { body: fetchBody, headers: fetchHeaders } = await buildRunRequest(
+      this._headers,
+      requestBody,
+      options.files,
+    );
+
     const response = await fetch(url, {
       method: "POST",
-      headers: { ...this._headers, "Content-Type": "application/json" },
-      body: JSON.stringify({ prompt: options.prompt, ...(folder ? { folder } : {}) }),
+      headers: fetchHeaders,
+      body: fetchBody,
       signal: abortController.signal,
     });
 
@@ -1541,7 +1660,10 @@ export class Box {
   /**
    * Create a new box from a saved snapshot.
    */
-  static async fromSnapshot(snapshotId: string, config?: BoxConfig): Promise<Box> {
+  static async fromSnapshot<TProvider = unknown>(
+    snapshotId: string,
+    config?: BoxConfig,
+  ): Promise<Box<TProvider>> {
     const apiKey = config?.apiKey ?? process.env.UPSTASH_BOX_API_KEY;
     if (!apiKey) {
       throw new BoxError(
@@ -1561,6 +1683,7 @@ export class Box {
       snapshot_id: snapshotId,
     };
     if (config?.name) body.name = config.name;
+    if (config?.size) body.size = config.size;
     if (config?.agent) {
       body.model = config.agent.model;
       body.agent = config.agent.provider ?? config.agent.runner;
@@ -1825,6 +1948,24 @@ export class Box {
     });
   }
 
+  // ==================== Skills ====================
+
+  private async _skillAdd(skillId: string): Promise<void> {
+    await this._request("POST", `/v2/box/${this.id}/config/skills`, {
+      body: { skill_id: skillId },
+    });
+  }
+
+  private async _skillRemove(skillId: string): Promise<void> {
+    // skill_id format: owner/repo/skill-name
+    await this._request("DELETE", `/v2/box/${this.id}/config/skills/${skillId}`);
+  }
+
+  private async _skillList(): Promise<string[]> {
+    const data = await this._request<BoxData>("GET", `/v2/box/${this.id}`);
+    return data.enabled_skills ?? [];
+  }
+
   // ==================== Preview ====================
 
   async getPreviewUrl(
@@ -2044,6 +2185,7 @@ export class EphemeralBox {
 
     const body: Record<string, unknown> = { ephemeral: true };
     if (config?.name) body.name = config.name;
+    if (config?.size) body.size = config.size;
     if (config?.ttl !== undefined) body.ttl = config.ttl;
     if (config?.runtime) body.runtime = config.runtime;
     if (config?.env) body.env_vars = config.env;
@@ -2111,6 +2253,7 @@ export class EphemeralBox {
       ephemeral: true,
     };
     if (config?.name) body.name = config.name;
+    if (config?.size) body.size = config.size;
     if (config?.ttl !== undefined) body.ttl = config.ttl;
     if (config?.runtime) body.runtime = config.runtime;
     if (config?.env) body.env_vars = config.env;
@@ -2144,6 +2287,11 @@ export class EphemeralBox {
    * Get an existing ephemeral box by name
    */
   static getByName = Box.get;
+
+  /**
+   * Delete specific boxes by ID.
+   */
+  static delete = Box.delete;
 }
 
 // ==================== Helpers ====================
@@ -2190,6 +2338,94 @@ function deserializeNetworkPolicy(raw: BoxData["network_policy"]): NetworkPolicy
     };
   }
   return { mode: raw.mode };
+}
+
+/** Check whether PromptFiles are local file paths (string[]) or base64 data objects. */
+function isFilePaths(files: PromptFiles): files is string[] {
+  return typeof files[0] === "string";
+}
+
+const MIME_TYPES: Record<string, string> = {
+  ".png": "image/png",
+  ".jpg": "image/jpeg",
+  ".jpeg": "image/jpeg",
+  ".gif": "image/gif",
+  ".webp": "image/webp",
+  ".svg": "image/svg+xml",
+  ".pdf": "application/pdf",
+  ".csv": "text/csv",
+  ".txt": "text/plain",
+  ".json": "application/json",
+  ".xml": "application/xml",
+  ".html": "text/html",
+  ".md": "text/markdown",
+  ".ts": "text/plain",
+  ".js": "text/plain",
+  ".py": "text/plain",
+};
+
+/**
+ * Build a multipart FormData body from run options + local file paths.
+ * All options are sent as form fields; files as binary parts.
+ */
+async function buildMultipartBody(
+  requestBody: Record<string, unknown>,
+  filePaths: string[],
+): Promise<FormData> {
+  const [fs, path] = await Promise.all([import("node:fs/promises"), import("node:path")]);
+
+  const formData = new FormData();
+
+  // Add all scalar fields
+  for (const [key, value] of Object.entries(requestBody)) {
+    if (value === undefined) continue;
+    if (typeof value === "string") {
+      formData.append(key, value);
+    } else {
+      formData.append(key, JSON.stringify(value));
+    }
+  }
+
+  // Add files as binary parts
+  for (const filePath of filePaths) {
+    const buffer = await fs.readFile(filePath);
+    const filename = path.basename(filePath);
+    const ext = path.extname(filePath).toLowerCase();
+    const mimeType = MIME_TYPES[ext] ?? "application/octet-stream";
+    formData.append("files", new Blob([buffer], { type: mimeType }), filename);
+  }
+
+  return formData;
+}
+
+/**
+ * Build the fetch body + headers for a run request.
+ * - file paths → multipart FormData
+ * - base64 objects → JSON with `files` array
+ * - no files → plain JSON
+ */
+async function buildRunRequest(
+  baseHeaders: Record<string, string>,
+  requestBody: Record<string, unknown>,
+  files?: PromptFiles,
+): Promise<{ body: string | FormData; headers: Record<string, string> }> {
+  if (files?.length) {
+    if (isFilePaths(files)) {
+      return {
+        body: await buildMultipartBody(requestBody, files),
+        headers: { ...baseHeaders },
+      };
+    }
+    requestBody.files = files.map((f) => ({
+      data: f.data,
+      media_type: f.mediaType,
+      filename: f.filename,
+    }));
+  }
+  return {
+    body: JSON.stringify(requestBody),
+    headers: { ...baseHeaders, "Content-Type": "application/json" },
+  };
 }
 
 /** @internal */

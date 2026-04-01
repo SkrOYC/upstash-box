@@ -6,6 +6,17 @@ import type { ZodType } from "zod/v3";
 export type Runtime = "node" | "python" | "golang" | "ruby" | "rust";
 
 /**
+ * Resource size presets for boxes.
+ *
+ * | Size     | CPU      | Memory |
+ * |----------|----------|--------|
+ * | `small`  | 2 cores  | 2 GB   |
+ * | `medium` | 4 cores  | 8 GB   |
+ * | `large`  | 8 cores  | 16 GB  |
+ */
+export type BoxSize = "small" | "medium" | "large";
+
+/**
  * Agent SDKs available for boxes
  */
 export enum Agent {
@@ -136,6 +147,74 @@ export type AgentConfig = {
     }
 );
 
+// ==================== Agent Options ====================
+
+/**
+ * SDK-specific options forwarded to the Claude Code agent.
+ */
+export interface ClaudeCodeAgentOptions {
+  /** Max conversation turns */
+  maxTurns?: number;
+  /** Max budget in USD */
+  maxBudgetUsd?: number;
+  /** Thinking depth */
+  effort?: "low" | "medium" | "high" | "max";
+  /** Thinking configuration */
+  thinking?:
+    | { type: "adaptive" }
+    | { type: "enabled"; budgetTokens: number }
+    | { type: "disabled" };
+  /** Tools to deny */
+  disallowedTools?: string[];
+  /** Custom subagent definitions */
+  agents?: Record<string, unknown>;
+  /** Enable prompt suggestions */
+  promptSuggestions?: boolean;
+  /** Fallback model */
+  fallbackModel?: string;
+  /** Custom system prompt */
+  systemPrompt?: string | Record<string, unknown>;
+}
+
+/**
+ * SDK-specific options forwarded to the Codex agent.
+ */
+export interface CodexAgentOptions {
+  /** Reasoning effort */
+  modelReasoningEffort?: "none" | "minimal" | "low" | "medium" | "high" | "xhigh";
+  /** Summary style */
+  modelReasoningSummary?: "auto" | "concise" | "detailed" | "none";
+  /** Agent personality */
+  personality?: "friendly" | "pragmatic" | "none";
+  /** Web search */
+  webSearch?: "live" | boolean;
+}
+
+/**
+ * SDK-specific options forwarded to the OpenCode agent.
+ */
+export interface OpenCodeAgentOptions {
+  /** Reasoning effort */
+  reasoningEffort?: "low" | "medium" | "high";
+  /** Output verbosity */
+  textVerbosity?: "low" | "medium" | "high";
+  /** Summary mode */
+  reasoningSummary?: "auto" | "concise" | "detailed" | "none";
+  /** Thinking configuration for Anthropic models */
+  thinking?: { type: "enabled"; budgetTokens: number };
+}
+
+/**
+ * Resolves the correct agent options type based on the provider.
+ */
+export type AgentOptions<TProvider = unknown> = TProvider extends Agent.ClaudeCode
+  ? ClaudeCodeAgentOptions
+  : TProvider extends Agent.Codex
+    ? CodexAgentOptions
+    : TProvider extends Agent.OpenCode
+      ? OpenCodeAgentOptions
+      : Record<string, unknown>;
+
 /**
  * Network access policy for a box.
  *
@@ -162,11 +241,12 @@ export type NetworkPolicy =
       deniedCidrs?: string[];
     };
 
-export interface BoxConfig {
-  apiKey?: string;
+export interface BoxConfig extends BoxConnectionOptions {
   /** Human-readable name for the box */
   name?: string;
   runtime?: Runtime;
+  /** Resource size for the box. Defaults to `"small"`. */
+  size?: BoxSize;
   agent?: AgentConfig;
   git?: {
     token?: string;
@@ -209,7 +289,6 @@ export interface BoxConfig {
    */
   skills?: string[];
   mcpServers?: McpServerConfig[];
-  baseUrl?: string;
   timeout?: number;
   debug?: boolean;
 }
@@ -221,13 +300,13 @@ export interface BoxConfig {
  * exec and file operations. They are created synchronously (no polling)
  * and auto-delete after the configured TTL.
  */
-export interface EphemeralBoxConfig {
-  /** Upstash Box API key. Falls back to UPSTASH_BOX_API_KEY env var. */
-  apiKey?: string;
+export interface EphemeralBoxConfig extends BoxConnectionOptions {
   /** Human-readable name for the box */
   name?: string;
   /** Runtime environment for the box. */
   runtime?: Runtime;
+  /** Resource size for the box. Defaults to `"small"`. */
+  size?: BoxSize;
   /** Time-to-live in seconds. Max 259200 (3 days). Defaults to 259200 if omitted. */
   ttl?: number;
   /** Environment variables to inject into the box. */
@@ -242,8 +321,6 @@ export interface EphemeralBoxConfig {
   attachHeaders?: Record<string, Record<string, string>>;
   /** Network access policy — controls outbound connectivity */
   networkPolicy?: NetworkPolicy;
-  /** Base URL of the Box API (defaults to https://us-east-1.box.upstash.com) */
-  baseUrl?: string;
   /** Request timeout in milliseconds (defaults to 600000) */
   timeout?: number;
   /** Enable debug logging */
@@ -322,11 +399,35 @@ export type Chunk =
   | { type: "unknown"; event: string; data: unknown };
 
 /**
+ * Files to attach to a prompt. Two formats:
+ *
+ * - **Local file paths** (`string[]`) — read from disk and sent as multipart form data
+ * - **Base64 data** — sent inline as JSON
+ *
+ * Max 10 files, 10 MB each.
+ *
+ * @example Local files (multipart)
+ * ```ts
+ * { files: ["./screenshot.png", "./report.pdf"] }
+ * ```
+ *
+ * @example Base64 (JSON)
+ * ```ts
+ * { files: [{ data: "iVBORw0KGgo...", mediaType: "image/png", filename: "screenshot.png" }] }
+ * ```
+ */
+export type PromptFiles = string[] | { data: string; mediaType: string; filename?: string }[];
+
+/**
  * Options for streaming agent output
  */
-export interface StreamOptions {
+export interface StreamOptions<TProvider = unknown> {
   /** The prompt/task for the AI agent */
   prompt: string;
+  /** Files to attach to the prompt (images, PDFs, etc.) */
+  files?: PromptFiles;
+  /** SDK-specific options forwarded to the underlying agent */
+  options?: AgentOptions<TProvider>;
   /** Timeout in milliseconds — aborts if exceeded */
   timeout?: number;
   /** Tool use callback — called when the agent invokes a tool (Read, Write, Bash, etc.) */
@@ -336,11 +437,15 @@ export interface StreamOptions {
 /**
  * Options for running a prompt
  */
-export interface RunOptions<T = undefined> {
+export interface RunOptions<T = undefined, TProvider = unknown> {
   /** The prompt/task for the AI agent */
   prompt: string;
   /** Zod schema for structured output — typed, validated results */
   responseSchema?: ZodType<T>;
+  /** Files to attach to the prompt (images, PDFs, etc.) */
+  files?: PromptFiles;
+  /** SDK-specific options forwarded to the underlying agent */
+  options?: AgentOptions<TProvider>;
   /** Timeout in milliseconds — aborts if exceeded */
   timeout?: number;
   /** Retries with exponential backoff on transient failures */
@@ -414,30 +519,29 @@ export interface Snapshot {
   name: string;
   box_id: string;
   size_bytes: number;
-  image_url?: string;
-  s3_key?: string;
   status: "creating" | "ready" | "error" | "deleted";
   created_at: number;
 }
 
 /**
- * Options for listing boxes
+ * Shared connection options for static Box methods.
  */
-export interface ListOptions {
+export interface BoxConnectionOptions {
   /** Upstash Box API key. Falls back to UPSTASH_BOX_API_KEY env var. */
   apiKey?: string;
-  /** Base URL of the Box API (defaults to https://box.api.upstashdev.com) */
+  /** Base URL of the Box API (defaults to https://us-east-1.box.upstash.com) */
   baseUrl?: string;
 }
 
 /**
+ * Options for listing boxes
+ */
+export interface ListOptions extends BoxConnectionOptions {}
+
+/**
  * Options for getting/reconnecting to an existing box
  */
-export interface BoxGetOptions {
-  /** Upstash Box API key. Falls back to UPSTASH_BOX_API_KEY env var. */
-  apiKey?: string;
-  /** Base URL of the Box API (defaults to https://box.api.upstashdev.com) */
-  baseUrl?: string;
+export interface BoxGetOptions extends BoxConnectionOptions {
   /** GitHub personal access token */
   gitToken?: string;
   /** Request timeout in milliseconds (defaults to 600000) */
@@ -489,8 +593,10 @@ export type BoxData = {
   id: string;
   customer_id?: string;
   name?: string;
+  size?: BoxSize;
   model?: string;
   agent?: Agent;
+  enabled_skills?: string[];
   runtime?: string;
   status: BoxStatus;
   /**
