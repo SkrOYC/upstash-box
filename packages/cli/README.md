@@ -31,14 +31,15 @@ Create a new box and enter an interactive REPL.
 
 ```bash
 # Uses Upstash-managed key by default (no --agent-api-key needed)
-box create --agent-model claude/sonnet_4_5
+box create --agent-harness claude-code --agent-model anthropic/claude-sonnet-4-5
 
 # Use a key stored in the Upstash console
-box create --agent-model claude/sonnet_4_5 --agent-api-key stored
+box create --agent-harness claude-code --agent-model anthropic/claude-sonnet-4-5 --agent-api-key stored
 
 # Pass a direct API key
 box create \
-  --agent-model claude/sonnet_4_5 \
+  --agent-harness claude-code \
+  --agent-model anthropic/claude-sonnet-4-5 \
   --agent-api-key $CLAUDE_KEY \
   --runtime node \
   --git-token $GITHUB_TOKEN \
@@ -48,17 +49,19 @@ box create \
   --env DEBUG=true
 ```
 
-| Flag               | Description                                                                                 | Default           |
-| ------------------ | ------------------------------------------------------------------------------------------- | ----------------- |
-| `--token`          | Upstash Box API token                                                                       |                   |
-| `--runtime`        | Runtime environment (`node`, `python`, `golang`, `ruby`, `rust`)                            |                   |
-| `--agent-model`    | Agent model identifier                                                                      |                   |
-| `--agent-provider` | Agent provider (`claude-code`, `codex`, `opencode`) — inferred from model prefix if omitted | inferred          |
-| `--agent-api-key`  | Agent API key — omit for Upstash-managed key, `stored` for a saved key, or a direct API key | Upstash           |
-| `--git-token`      | GitHub personal access token                                                                |                   |
-| `--git-user-name`  | Git `user.name` set globally in the box container                                           | `Upstash Box`     |
-| `--git-user-email` | Git `user.email` set globally in the box container                                          | `box@upstash.com` |
-| `--env KEY=VAL`    | Environment variable (repeatable)                                                           |                   |
+| Flag               | Description                                                                                 | Default                       |
+| ------------------ | ------------------------------------------------------------------------------------------- | ----------------------------- |
+| `--token`          | Upstash Box API token                                                                       |                               |
+| `--runtime`        | Runtime environment (`node`, `python`, `golang`, `ruby`, `rust`)                            |                               |
+| `--agent-model`    | Agent model identifier                                                                      |                               |
+| `--agent-harness`  | Agent harness (`claude-code`, `codex`, `opencode`)                                          | required with `--agent-model` |
+| `--agent-provider` | Deprecated alias for `--agent-harness`                                                      |                               |
+| `--agent-runner`   | Deprecated alias for `--agent-harness`                                                      |                               |
+| `--agent-api-key`  | Agent API key — omit for Upstash-managed key, `stored` for a saved key, or a direct API key | Upstash                       |
+| `--git-token`      | GitHub personal access token                                                                |                               |
+| `--git-user-name`  | Git `user.name` set globally in the box container                                           | `Upstash Box`                 |
+| `--git-user-email` | Git `user.email` set globally in the box container                                          | `box@upstash.com`             |
+| `--env KEY=VAL`    | Environment variable (repeatable)                                                           |                               |
 
 ### `box connect [box-id]`
 
@@ -74,8 +77,8 @@ box connect  # connects to most recent
 Create a new box from a snapshot and enter the REPL. Accepts the same flags as `create`.
 
 ```bash
-box from-snapshot snap_abc123 --agent-model claude/sonnet_4_5
-box from-snapshot snap_abc123 --agent-model claude/sonnet_4_5 --agent-provider codex --agent-api-key $CLAUDE_KEY
+box from-snapshot snap_abc123 --agent-model anthropic/claude-sonnet-4-5 --agent-harness claude-code
+box from-snapshot snap_abc123 --agent-model anthropic/claude-sonnet-4-5 --agent-harness claude-code --agent-api-key $CLAUDE_KEY
 ```
 
 ### `box list`
@@ -101,20 +104,22 @@ Scaffold a standalone demo project that uses the `@upstash/box` SDK. Creates a d
 ```bash
 box init-demo \
   --token $UPSTASH_BOX_API_KEY \
-  --agent-model claude/sonnet_4_5 \
+  --agent-harness claude-code \
+  --agent-model anthropic/claude-sonnet-4-5 \
   --runtime node \
   --git-token $GITHUB_TOKEN \
   --directory my-demo
 ```
 
-| Flag              | Description                                                                                 | Default    |
-| ----------------- | ------------------------------------------------------------------------------------------- | ---------- |
-| `--token`         | Upstash Box API token                                                                       |            |
-| `--agent-model`   | Agent model identifier                                                                      |            |
-| `--agent-api-key` | Agent API key — omit for Upstash-managed key, `stored` for a saved key, or a direct API key | Upstash    |
-| `--runtime`       | Runtime environment                                                                         | `node`     |
-| `--git-token`     | GitHub personal access token                                                                |            |
-| `--directory`     | Output directory                                                                            | `box-demo` |
+| Flag              | Description                                                                                 | Default                       |
+| ----------------- | ------------------------------------------------------------------------------------------- | ----------------------------- |
+| `--token`         | Upstash Box API token                                                                       |                               |
+| `--agent-harness` | Agent harness (`claude-code`, `codex`, `opencode`)                                          | required with `--agent-model` |
+| `--agent-model`   | Agent model identifier                                                                      |                               |
+| `--agent-api-key` | Agent API key — omit for Upstash-managed key, `stored` for a saved key, or a direct API key | Upstash                       |
+| `--runtime`       | Runtime environment                                                                         | `node`                        |
+| `--git-token`     | GitHub personal access token                                                                |                               |
+| `--directory`     | Output directory                                                                            | `box-demo`                    |
 
 After scaffolding, the command offers to run the demo immediately. The generated project includes:
 

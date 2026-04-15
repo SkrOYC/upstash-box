@@ -29,12 +29,12 @@ export enum Agent {
  * Claude Code model identifiers
  */
 export enum ClaudeCode {
-  Opus_4_5 = "claude/opus_4_5",
-  Opus_4_6 = "claude/opus_4_6",
-  Sonnet_4 = "claude/sonnet_4",
-  Sonnet_4_5 = "claude/sonnet_4_5",
-  Sonnet_4_6 = "claude/sonnet_4_6",
-  Haiku_4_5 = "claude/haiku_4_5",
+  Opus_4_5 = "anthropic/claude-opus-4-5",
+  Opus_4_6 = "anthropic/claude-opus-4-6",
+  Sonnet_4 = "anthropic/claude-sonnet-4",
+  Sonnet_4_5 = "anthropic/claude-sonnet-4-5",
+  Sonnet_4_6 = "anthropic/claude-sonnet-4-6",
+  Haiku_4_5 = "anthropic/claude-haiku-4-5",
 }
 
 /**
@@ -66,21 +66,21 @@ export enum OpenRouterModel {
  * OpenCode model identifiers — supports models from multiple providers
  */
 export enum OpenCodeModel {
-  // Anthropic models (direct provider key)
-  Claude_Opus_4_5 = "claude/opus_4_5",
-  Claude_Opus_4_6 = "claude/opus_4_6",
-  Claude_Sonnet_4 = "claude/sonnet_4",
-  Claude_Sonnet_4_5 = "claude/sonnet_4_5",
-  Claude_Sonnet_4_6 = "claude/sonnet_4_6",
-  Claude_Haiku_4_5 = "claude/haiku_4_5",
-  // OpenAI models (direct provider key)
-  GPT_5_3_Codex = "openai/gpt-5.3-codex",
-  GPT_5_2_Codex = "openai/gpt-5.2-codex",
-  GPT_5_1_Codex_Max = "openai/gpt-5.1-codex-max",
-  GPT_5_1_Codex_Mini = "openai/gpt-5.1-codex-mini",
-  GPT_4_1 = "openai/gpt-4.1",
-  O3 = "openai/o3",
-  O4_Mini = "openai/o4-mini",
+  // Anthropic-backed OpenCode models
+  Claude_Opus_4_5 = "opencode/claude-opus-4-5",
+  Claude_Opus_4_6 = "opencode/claude-opus-4-6",
+  Claude_Sonnet_4 = "opencode/claude-sonnet-4",
+  Claude_Sonnet_4_5 = "opencode/claude-sonnet-4-5",
+  Claude_Sonnet_4_6 = "opencode/claude-sonnet-4-6",
+  Claude_Haiku_4_5 = "opencode/claude-haiku-4-5",
+  // OpenAI-backed OpenCode models
+  GPT_5_3_Codex = "opencode/gpt-5.3-codex",
+  GPT_5_2_Codex = "opencode/gpt-5.2-codex",
+  GPT_5_1_Codex_Max = "opencode/gpt-5.1-codex-max",
+  GPT_5_1_Codex_Mini = "opencode/gpt-5.1-codex-mini",
+  GPT_4_1 = "opencode/gpt-4.1",
+  O3 = "opencode/o3",
+  O4_Mini = "opencode/o4-mini",
   // Free models
   Zen_GPT_5_Nano = "opencode/gpt-5-nano",
   Zen_MiniMax_M2_5_Free = "opencode/minimax-m2.5-free",
@@ -125,24 +125,60 @@ export type AgentConfig = {
    */
   apiKey?: BoxApiKey | string;
 } & (
-  | { provider: Agent.ClaudeCode; model: ClaudeCode | OpenRouterModel; runner?: never }
-  | { provider: Agent.Codex; model: OpenAICodex | OpenRouterModel; runner?: never }
   | {
-      provider: Agent.OpenCode;
-      model: OpenCodeModel | ClaudeCode | OpenAICodex | OpenRouterModel;
+      harness: Agent.ClaudeCode;
+      model: ClaudeCode | OpenRouterModel;
+      provider?: never;
       runner?: never;
     }
-  | { provider: string; model: string; runner?: never }
+  | { harness: Agent.Codex; model: OpenAICodex | OpenRouterModel; provider?: never; runner?: never }
   | {
-      /** @deprecated Use `provider` instead. */
+      harness: Agent.OpenCode;
+      model: OpenCodeModel | ClaudeCode | OpenAICodex | OpenRouterModel;
+      provider?: never;
+      runner?: never;
+    }
+  | { harness: string; model: string; provider?: never; runner?: never }
+  | {
+      /** @deprecated Use `harness` instead. */
+      provider: Agent.ClaudeCode;
+      model: ClaudeCode | OpenRouterModel;
+      harness?: never;
+      runner?: never;
+    }
+  | {
+      /** @deprecated Use `harness` instead. */
+      provider: Agent.Codex;
+      model: OpenAICodex | OpenRouterModel;
+      harness?: never;
+      runner?: never;
+    }
+  | {
+      /** @deprecated Use `harness` instead. */
+      provider: Agent.OpenCode;
+      model: OpenCodeModel | ClaudeCode | OpenAICodex | OpenRouterModel;
+      harness?: never;
+      runner?: never;
+    }
+  | {
+      /** @deprecated Use `harness` instead. */
+      provider: string;
+      model: string;
+      harness?: never;
+      runner?: never;
+    }
+  | {
+      /** @deprecated Use `harness` instead. */
       runner: Agent;
       model: OpenCodeModel | ClaudeCode | OpenAICodex | OpenRouterModel;
+      harness?: never;
       provider?: never;
     }
   | {
-      /** @deprecated Use `provider` instead. */
+      /** @deprecated Use `harness` instead. */
       runner: string;
       model: string;
+      harness?: never;
       provider?: never;
     }
 );
