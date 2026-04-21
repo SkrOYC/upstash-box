@@ -42,7 +42,7 @@ Create a new sandboxed box.
 import { Box, Agent, BoxApiKey } from "@upstash/box";
 
 const box = await Box.create({
-  apiKey: "abx_...", // or set UPSTASH_BOX_API_KEY
+  apiKey: "box_...", // or set UPSTASH_BOX_API_KEY
   runtime: "node", // "node" | "python" | "golang" | "ruby" | "rust"
   keepAlive: true,
   initCommand: "npm install && npm run dev",
@@ -97,10 +97,20 @@ Create a new box from a saved snapshot.
 ```ts
 const box = await Box.fromSnapshot("snap_abc123", {
   agent: { harness: Agent.ClaudeCode, model: "anthropic/claude-sonnet-4-5" },
+  keepAlive: true,
+  initCommand: "npm install && npm run dev",
 });
 ```
 
-`keepAlive` and `initCommand` are currently supported only by `Box.create()`, not `Box.fromSnapshot()`.
+### SSH
+
+You can also connect directly to a box shell:
+
+```bash
+ssh <box-id>@us-east-1.box.upstash.com
+```
+
+Use your **Box API key** as the SSH password.
 
 ### Agent
 
