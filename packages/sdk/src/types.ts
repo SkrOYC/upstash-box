@@ -848,7 +848,7 @@ export interface Schedule {
 /**
  * Public URL created for a box
  */
-export interface PublicUrl {
+export interface PublicURL {
   /** Public URL to access the exposed port */
   url: string;
   /** Port number exposed */
@@ -861,5 +861,5 @@ export interface PublicUrl {
   password?: string;
 }
 
-/** @deprecated Use `PublicUrl` instead. */
-export type Preview = PublicUrl;
+/** @deprecated Use `PublicURL` instead. */
+export type Preview = PublicURL;
