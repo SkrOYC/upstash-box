@@ -87,6 +87,14 @@ function toBackendAgentOptions(
   return mapped;
 }
 
+function resolveToolCallId(parsed: Record<string, unknown>): string | undefined {
+  if (typeof parsed.tool_call_id === "string") return parsed.tool_call_id;
+  if (typeof parsed.tool_use_id === "string") return parsed.tool_use_id;
+  if (typeof parsed.toolCallId === "string") return parsed.toolCallId;
+  if (typeof parsed.id === "string") return parsed.id;
+  return undefined;
+}
+
 /**
  * Error thrown by the Box SDK
  */
@@ -943,7 +951,20 @@ export class Box<TProvider = unknown> {
             break;
           }
           case "tool": {
-            options.onToolUse?.({ name: parsed.name, input: parsed.input });
+            const toolCallId = resolveToolCallId(parsed);
+            options.onToolUse?.({
+              toolCallId,
+              name: parsed.name ?? "",
+              input: parsed.input ?? {},
+            });
+            break;
+          }
+          case "tool_result": {
+            const toolCallId = resolveToolCallId(parsed);
+            options.onToolResult?.({
+              toolCallId,
+              output: parsed.output,
+            });
             break;
           }
           case "done": {
@@ -1095,12 +1116,31 @@ export class Box<TProvider = unknown> {
             return null;
           }
           case "tool": {
+            const toolCallId = resolveToolCallId(parsed);
             const chunk: Chunk = {
               type: "tool-call",
+              toolCallId,
               toolName: parsed.name ?? "",
               input: parsed.input ?? {},
             };
-            options.onToolUse?.({ name: parsed.name ?? "", input: parsed.input ?? {} });
+            options.onToolUse?.({
+              toolCallId,
+              name: parsed.name ?? "",
+              input: parsed.input ?? {},
+            });
+            return chunk;
+          }
+          case "tool_result": {
+            const toolCallId = resolveToolCallId(parsed);
+            const chunk: Chunk = {
+              type: "tool-result",
+              toolCallId,
+              output: parsed.output,
+            };
+            options.onToolResult?.({
+              toolCallId,
+              output: parsed.output,
+            });
             return chunk;
           }
           case "done": {
