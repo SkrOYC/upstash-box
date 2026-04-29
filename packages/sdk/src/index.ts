@@ -9,6 +9,7 @@ export {
 } from "./client.js";
 export {
   ClaudeCode,
+  CursorModel,
   OpenAICodex,
   OpenCodeModel,
   OpenRouterModel,
@@ -23,6 +24,7 @@ export type {
   AgentOptions,
   ClaudeCodeAgentOptions,
   CodexAgentOptions,
+  CursorAgentOptions,
   OpenCodeAgentOptions,
   BoxConfig,
   BoxConnectionOptions,
