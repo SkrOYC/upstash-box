@@ -7,6 +7,7 @@ export {
   inferDefaultProvider,
   inferDefaultRunner,
 } from "./client.js";
+export { runCustomHarness } from "./custom-harness.js";
 export {
   ClaudeCode,
   CursorModel,
@@ -21,6 +22,7 @@ export type {
   Runtime,
   BoxSize,
   AgentConfig,
+  CustomHarnessConfig,
   AgentOptions,
   ClaudeCodeAgentOptions,
   CodexAgentOptions,
@@ -73,3 +75,10 @@ export type {
   Schedule,
   ScheduleStatus,
 } from "./types.js";
+export type {
+  CustomHarnessContext,
+  CustomHarnessDone,
+  CustomHarnessEmitter,
+  CustomHarnessHandler,
+  RunCustomHarnessOptions,
+} from "./custom-harness.js";

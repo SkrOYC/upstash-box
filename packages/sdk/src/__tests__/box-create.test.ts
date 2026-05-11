@@ -55,6 +55,64 @@ describe("Box.create", () => {
     expect(body.agent_api_key).toBe("crsr-key");
   });
 
+  it("sends custom harness config without an agent API key", async () => {
+    const data = { ...TEST_BOX_DATA, status: "running", agent: Agent.Custom, model: "custom/demo" };
+    vi.mocked(fetch).mockResolvedValueOnce(mockResponse(data));
+
+    await Box.create({
+      ...TEST_CONFIG,
+      agent: {
+        harness: Agent.Custom,
+        model: "custom/demo",
+        customHarness: {
+          command: "node",
+          args: ["/workspace/home/custom-harness.mjs"],
+          protocol: "box-sse-v1",
+        },
+      },
+    });
+
+    const body = JSON.parse(vi.mocked(fetch).mock.calls[0]![1]?.body as string);
+    expect(body.agent).toBe(Agent.Custom);
+    expect(body.model).toBe("custom/demo");
+    expect(body.agent_api_key).toBeUndefined();
+    expect(body.custom_runner).toEqual({
+      command: "node",
+      args: ["/workspace/home/custom-harness.mjs"],
+      protocol: "box-sse-v1",
+    });
+  });
+
+  it("defaults custom harness model to custom", async () => {
+    const data = { ...TEST_BOX_DATA, status: "running", agent: Agent.Custom, model: "custom" };
+    vi.mocked(fetch).mockResolvedValueOnce(mockResponse(data));
+
+    await Box.create({
+      ...TEST_CONFIG,
+      agent: {
+        harness: Agent.Custom,
+        customHarness: { command: "python3", args: ["/workspace/home/harness.py"] },
+      },
+    });
+
+    const body = JSON.parse(vi.mocked(fetch).mock.calls[0]![1]?.body as string);
+    expect(body.agent).toBe(Agent.Custom);
+    expect(body.model).toBe("custom");
+    expect(body.custom_runner).toEqual({
+      command: "python3",
+      args: ["/workspace/home/harness.py"],
+    });
+  });
+
+  it("throws when custom harness config is missing", async () => {
+    await expect(
+      Box.create({
+        ...TEST_CONFIG,
+        agent: { harness: Agent.Custom, model: "custom/demo" } as any,
+      }),
+    ).rejects.toThrow("agent.customHarness is required when agent.harness is custom");
+  });
+
   it("supports deprecated provider field", async () => {
     const data = { ...TEST_BOX_DATA, status: "running" };
     vi.mocked(fetch).mockResolvedValueOnce(mockResponse(data));

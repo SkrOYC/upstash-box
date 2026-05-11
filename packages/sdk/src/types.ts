@@ -24,6 +24,7 @@ export enum Agent {
   Codex = "codex",
   OpenCode = "opencode",
   Cursor = "cursor",
+  Custom = "custom",
 }
 
 /**
@@ -153,9 +154,23 @@ export enum BoxApiKey {
 }
 
 /**
- * Agent configuration for a box.
+ * Custom harness process contract.
+ *
+ * The command is executed inside the box container for each `box.agent.run()` or
+ * `box.agent.stream()` call. The SDK/backend append `-p <prompt> --model <model> --stream`
+ * and, when available, `--session <sessionId>`. The process must write
+ * `box-sse-v1` events to stdout.
  */
-export type AgentConfig = {
+export interface CustomHarnessConfig {
+  /** Executable name from PATH, or an absolute path under /workspace/home or /home/boxuser. */
+  command: string;
+  /** Arguments passed before the SDK/backend prompt/model/session flags. */
+  args?: string[];
+  /** Streaming protocol emitted by the harness. Defaults to `box-sse-v1`. */
+  protocol?: "box-sse-v1";
+}
+
+type ManagedAgentApiKeyConfig = {
   /**
    * API key for the agent model.
    *
@@ -167,14 +182,21 @@ export type AgentConfig = {
    * When omitted, the server decides which key to use.
    */
   apiKey?: BoxApiKey | string;
-} & (
+};
+
+type HarnessConfig =
   | {
       harness: Agent.ClaudeCode;
       model: ClaudeCode | OpenRouterModel;
       provider?: never;
       runner?: never;
     }
-  | { harness: Agent.Codex; model: OpenAICodex | OpenRouterModel; provider?: never; runner?: never }
+  | {
+      harness: Agent.Codex;
+      model: OpenAICodex | OpenRouterModel;
+      provider?: never;
+      runner?: never;
+    }
   | {
       harness: Agent.OpenCode;
       model: OpenCodeModel | ClaudeCode | OpenAICodex | OpenRouterModel;
@@ -220,7 +242,7 @@ export type AgentConfig = {
     }
   | {
       /** @deprecated Use `harness` instead. */
-      runner: Agent;
+      runner: Exclude<Agent, Agent.Custom>;
       model: OpenCodeModel | ClaudeCode | OpenAICodex | OpenRouterModel | CursorModel;
       harness?: never;
       provider?: never;
@@ -231,8 +253,24 @@ export type AgentConfig = {
       model: string;
       harness?: never;
       provider?: never;
-    }
-);
+    };
+
+type CustomAgentConfig = {
+  harness: Agent.Custom;
+  /** Model label forwarded to the custom harness. Defaults to `custom`. */
+  model?: string;
+  /** Process to execute for custom agent runs. */
+  customHarness: CustomHarnessConfig;
+  /** Custom harnesses do not use managed provider keys; pass secrets through `env` if needed. */
+  apiKey?: never;
+  provider?: never;
+  runner?: never;
+};
+
+/**
+ * Agent configuration for a box.
+ */
+export type AgentConfig = CustomAgentConfig | (ManagedAgentApiKeyConfig & HarnessConfig);
 
 // ==================== Agent Options ====================
 
@@ -699,7 +737,7 @@ export type BoxData = {
   size?: BoxSize;
   keep_alive?: boolean;
   model?: string;
-  agent?: Agent;
+  agent?: Agent | string;
   enabled_skills?: string[];
   runtime?: string;
   status: BoxStatus;
