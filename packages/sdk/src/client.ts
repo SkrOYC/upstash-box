@@ -50,8 +50,13 @@ import {
   Agent,
 } from "./types.js";
 import type { ZodType } from "zod/v3";
+import { telemetryHeaders } from "./telemetry.js";
 
 const DEFAULT_BASE_URL = "https://us-east-1.box.upstash.com";
+
+function apiHeaders(apiKey: string, enableTelemetry?: boolean): Record<string, string> {
+  return { "X-Box-Api-Key": apiKey, ...telemetryHeaders(enableTelemetry) };
+}
 
 /** Infer the default harness from a model string prefix. */
 export function inferDefaultProvider(model: string): Agent {
@@ -598,9 +603,7 @@ export class Box<TProvider = unknown> {
       process.env.UPSTASH_BOX_BASE_URL ??
       DEFAULT_BASE_URL
     ).replace(/\/$/, "");
-    const headers: Record<string, string> = {
-      "X-Box-Api-Key": apiKey,
-    };
+    const headers: Record<string, string> = apiHeaders(apiKey, config?.enableTelemetry);
     const timeout = config?.timeout ?? 600000;
     const debug = config?.debug ?? false;
 
@@ -686,7 +689,7 @@ export class Box<TProvider = unknown> {
       process.env.UPSTASH_BOX_BASE_URL ??
       DEFAULT_BASE_URL
     ).replace(/\/$/, "");
-    const headers: Record<string, string> = { "X-Box-Api-Key": apiKey };
+    const headers: Record<string, string> = apiHeaders(apiKey, options?.enableTelemetry);
 
     const response = await fetch(`${baseUrl}/v2/box`, { headers });
     if (!response.ok) {
@@ -717,7 +720,7 @@ export class Box<TProvider = unknown> {
       DEFAULT_BASE_URL
     ).replace(/\/$/, "");
     const headers: Record<string, string> = {
-      "X-Box-Api-Key": apiKey,
+      ...apiHeaders(apiKey, options?.enableTelemetry),
       "Content-Type": "application/json",
     };
 
@@ -757,7 +760,7 @@ export class Box<TProvider = unknown> {
       DEFAULT_BASE_URL
     ).replace(/\/$/, "");
     const headers: Record<string, string> = {
-      "X-Box-Api-Key": apiKey,
+      ...apiHeaders(apiKey, options?.enableTelemetry),
       "Content-Type": "application/json",
     };
 
@@ -792,7 +795,7 @@ export class Box<TProvider = unknown> {
       process.env.UPSTASH_BOX_BASE_URL ??
       DEFAULT_BASE_URL
     ).replace(/\/$/, "");
-    const headers: Record<string, string> = { "X-Box-Api-Key": apiKey };
+    const headers: Record<string, string> = apiHeaders(apiKey, options?.enableTelemetry);
     const timeout = options?.timeout ?? 600000;
     const debug = options?.debug ?? false;
 
@@ -830,7 +833,7 @@ export class Box<TProvider = unknown> {
       process.env.UPSTASH_BOX_BASE_URL ??
       DEFAULT_BASE_URL
     ).replace(/\/$/, "");
-    const headers = { "X-Box-Api-Key": apiKey };
+    const headers = apiHeaders(apiKey, options?.enableTelemetry);
     const response = await fetch(`${baseUrl}/v2/box/settings/env/${encodeURIComponent(key)}`, {
       method: "PUT",
       headers: { ...headers, "Content-Type": "application/json" },
@@ -851,7 +854,7 @@ export class Box<TProvider = unknown> {
       process.env.UPSTASH_BOX_BASE_URL ??
       DEFAULT_BASE_URL
     ).replace(/\/$/, "");
-    const headers = { "X-Box-Api-Key": apiKey };
+    const headers = apiHeaders(apiKey, options?.enableTelemetry);
     const response = await fetch(`${baseUrl}/v2/box/settings/env`, { headers });
     if (!response.ok) throw new BoxError(await parseErrorResponse(response), response.status);
     const data = (await response.json()) as { env_vars?: Record<string, string> };
@@ -870,7 +873,7 @@ export class Box<TProvider = unknown> {
       process.env.UPSTASH_BOX_BASE_URL ??
       DEFAULT_BASE_URL
     ).replace(/\/$/, "");
-    const headers = { "X-Box-Api-Key": apiKey };
+    const headers = apiHeaders(apiKey, options?.enableTelemetry);
     const response = await fetch(`${baseUrl}/v2/box/settings/env/${encodeURIComponent(key)}`, {
       method: "DELETE",
       headers,
@@ -893,7 +896,7 @@ export class Box<TProvider = unknown> {
       process.env.UPSTASH_BOX_BASE_URL ??
       DEFAULT_BASE_URL
     ).replace(/\/$/, "");
-    const headers = { "X-Box-Api-Key": apiKey };
+    const headers = apiHeaders(apiKey, options?.enableTelemetry);
     const response = await fetch(`${baseUrl}/v2/box/settings/env`, {
       method: "PUT",
       headers: { ...headers, "Content-Type": "application/json" },
@@ -1987,7 +1990,7 @@ export class Box<TProvider = unknown> {
       process.env.UPSTASH_BOX_BASE_URL ??
       DEFAULT_BASE_URL
     ).replace(/\/$/, "");
-    const headers: Record<string, string> = { "X-Box-Api-Key": apiKey };
+    const headers: Record<string, string> = apiHeaders(apiKey, config?.enableTelemetry);
     const timeout = config?.timeout ?? 600000;
     const debug = config?.debug ?? false;
 
@@ -2518,9 +2521,7 @@ export class EphemeralBox {
       process.env.UPSTASH_BOX_BASE_URL ??
       DEFAULT_BASE_URL
     ).replace(/\/$/, "");
-    const headers: Record<string, string> = {
-      "X-Box-Api-Key": apiKey,
-    };
+    const headers: Record<string, string> = apiHeaders(apiKey, config?.enableTelemetry);
     const timeout = config?.timeout ?? 600000;
     const debug = config?.debug ?? false;
 
@@ -2583,9 +2584,7 @@ export class EphemeralBox {
       process.env.UPSTASH_BOX_BASE_URL ??
       DEFAULT_BASE_URL
     ).replace(/\/$/, "");
-    const headers: Record<string, string> = {
-      "X-Box-Api-Key": apiKey,
-    };
+    const headers: Record<string, string> = apiHeaders(apiKey, config?.enableTelemetry);
     const timeout = config?.timeout ?? 600000;
     const debug = config?.debug ?? false;
 
